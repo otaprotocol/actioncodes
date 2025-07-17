@@ -1,0 +1,89 @@
+{
+  "name": "@actioncodes/protocol",
+  "version": "1.0.0",
+  "description": "Action Codes Protocol",
+  "main": "src/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run lint && pnpm run test && pnpm run build:js",
+    "build:js": "tsc",
+    "lint": "eslint .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "docs": "typedoc --out docs/ --entryPointStrategy expand --tsconfig ./tsconfig.json --plugin typedoc-plugin-markdown ./src",
+    "publish:package": "pnpm run lint && pnpm build && pnpm publish --access public",
+    "release": "pnpm run lint && pnpm version patch && pnpm build && pnpm publish --access public",
+    "release:patch": "pnpm run lint && pnpm version patch && pnpm build && pnpm publish --access public",
+    "release:minor": "pnpm run lint && pnpm version minor && pnpm build && pnpm publish --access public",
+    "release:major": "pnpm run lint && pnpm version major && pnpm build && pnpm publish --access public",
+    "publish:dry": "pnpm run lint && pnpm build && pnpm publish --access public --dry-run",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "solana",
+    "ota-protocol",
+    "ota-protocol-sdk",
+    "ota-protocol-utils",
+    "ota-protocol-types",
+    "ota-protocol-constants"
+  ],
+  "author": "OTA Protocol Core Team",
+  "license": "Apache-2.0",
+  "copyright": "Copyright 2025 OTA Protocol",
+  "homepage": "https://ota.codes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otacodes/protocol"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest",
+    "access": "public"
+  },
+  "files": [
+    "docs",
+    "dist",
+    "package.json",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "packageManager": "pnpm@10.13.1",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^9.31.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/npm": "^12.0.2",
+    "@types/jest": "^30.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-plugin-jest": "^29.0.1",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "jest": "^30.0.4",
+    "semantic-release": "^24.2.7",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typedoc-plugin-markdown": "^4.6.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.37.0"
+  },
+  "dependencies": {
+    "js-sha256": "^0.11.1"
+  },
+  "peerDependencies": {
+    "@solana/spl-memo": "^0.2.5",
+    "@solana/web3.js": "^1.98.2",
+    "tweetnacl": "^1.0.3"
+  }
+}

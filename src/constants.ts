@@ -1,0 +1,9 @@
+export const PROTOCOL_VERSION = "1";
+export const PROTOCOL_PREFIX = "actioncodes";
+export const CODE_LENGTH = 8;
+export const CODE_TTL = 1000 * 60 * 2; // 2 minutes
+export const PROTOCOL_CODE_PREFIX = "DEFAULT";
+export const MIN_PREFIX_LENGTH = 3;
+export const MAX_PREFIX_LENGTH = 12;
+export const SUPPORTED_CHAINS = ["solana"] as const;
+export type SupportedChain = (typeof SUPPORTED_CHAINS)[number];
