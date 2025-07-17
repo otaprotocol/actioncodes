@@ -39,7 +39,7 @@
   "homepage": "https://ota.codes",
   "repository": {
     "type": "git",
-    "url": "https://github.com/otacodes/protocol"
+    "url": "https://github.com/actioncodes/protocol"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
