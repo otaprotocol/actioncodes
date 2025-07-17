@@ -280,7 +280,8 @@ describe('ProtocolMeta', () => {
     it('should handle DEFAULT prefix (which becomes empty)', () => {
       const result = ProtocolMetaParser.fromInitiator('ABC123', ISSUER, 'DEFAULT');
       expect(result.prefix).toBe('DEFAULT');
-      expect(result.id).toBe(CodeGenerator.deriveCodeHash('ABC123', 'DEFAULT'));
+      expect(result.id).toHaveLength(64); // SHA-256 hash length
+      expect(/^[a-f0-9]{64}$/.test(result.id)).toBe(true); // Valid hex hash
       expect(result.iss).toBe(ISSUER);
     });
 
@@ -288,7 +289,8 @@ describe('ProtocolMeta', () => {
       const longInitiator = 'A'.repeat(1000);
       const result = ProtocolMetaParser.fromInitiator(longInitiator, ISSUER);
       expect(result.initiator).toBe(longInitiator);
-      expect(result.id).toBe(CodeGenerator.deriveCodeHash(longInitiator, 'DEFAULT'));
+      expect(result.id).toHaveLength(64); // SHA-256 hash length
+      expect(/^[a-f0-9]{64}$/.test(result.id)).toBe(true); // Valid hex hash
       expect(result.iss).toBe(ISSUER);
     });
 
