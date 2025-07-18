@@ -199,4 +199,13 @@ export class ActionCode<T> {
             return `${seconds}s remaining`;
         }
     }
+
+    /**
+     * Get the code hash for this action code
+     * it is also used in the protocol meta as the code id
+     * @returns Code hash string
+     */
+    get codeHash(): string {
+        return CodeGenerator.deriveCodeHash(this.fields.pubkey, this.fields.prefix, this.fields.timestamp);
+    }
 }
