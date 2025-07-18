@@ -1,3 +1,5 @@
+import { ActionCode } from '../actioncode';
+import { PROTOCOL_CODE_PREFIX } from '../constants';
 import { ProtocolMetaV1 } from '../meta';
 
 /**
@@ -83,4 +85,24 @@ export abstract class BaseChainAdapter<T = any> {
      * @returns True if transaction integrity is valid
      */
     protected abstract validateTransactionIntegrity(tx: T, meta: ProtocolMetaV1): boolean;
+
+    /**
+     * Get the code signature message
+     * @param code - The code to sign
+     * @param timestamp - The timestamp of the code
+     * @param prefix - The prefix of the code
+     * @returns The code signature message
+     */
+    getCodeSignatureMessage(code: string, timestamp: number, prefix: string = PROTOCOL_CODE_PREFIX): string {
+        return `${prefix}:${code}:${timestamp}`;
+    }
+
+    /**
+     * Verify the code signature
+     * This is specific to the chain and should be implemented by the concrete adapter
+     * It will be used to verify the code signature for the action code if the right wallet is used to sign the code
+     * @param actionCode - The action code to verify
+     * @returns True if the code signature is valid
+     */
+    abstract verifyCodeSignature(actionCode: ActionCode): boolean;
 } 

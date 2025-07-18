@@ -4,8 +4,8 @@ import { SolanaAdapter } from '../../src/adapters/solana';
 import { CodeGenerator } from '../../src/codegen';
 import { Keypair, Transaction } from '@solana/web3.js';
 import * as nacl from 'tweetnacl';
-import bs58 from 'bs58';
 import { ProtocolMetaParser } from '../../src/meta';
+import { Buffer } from "buffer";
 
 describe('🔐 Action Codes Protocol Security Tests', () => {
     let protocol: ActionCodesProtocol;
@@ -32,106 +32,132 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     function createRealSignature(keypair: Keypair, message: string): string {
         const messageBytes = new TextEncoder().encode(message);
         const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
-        return bs58.encode(signatureBytes);
+        return Buffer.from(signatureBytes).toString('base64');
     }
 
     /**
      * Helper function to generate a valid action code with real signature
      */
-    function generateValidActionCode(
+    async function generateValidActionCode(
         keypair: Keypair,
         prefix: string = 'DEFAULT',
         timestamp?: number
-    ): { actionCode: ActionCode<string>; signature: string } {
+    ): Promise<{ actionCode: ActionCode; signature: string }> {
         const pubkey = keypair.publicKey.toBase58();
         const ts = timestamp || Date.now();
 
         // Generate the code first
-        const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', prefix, ts);
+        const { code } = CodeGenerator.generateCode(pubkey, prefix, ts);
 
-        // Create the message that should be signed
-        const message = CodeGenerator.generateCodeSignatureMessage(code, ts);
+        // Create the message that should be signed using the adapter
+        const message = solanaAdapter.getCodeSignatureMessage(code, ts, prefix);
 
         // Create real signature
         const signature = createRealSignature(keypair, message);
 
-        // Generate action code with real signature
-        const actionCode = protocol.generateActionCode(pubkey, signature, 'solana', prefix, ts);
+        // Generate action code with real signature using the async method
+        const actionCode = await protocol.createActionCode(
+            pubkey,
+            async () => signature,
+            'solana',
+            prefix,
+            ts
+        );
 
         return { actionCode, signature };
     }
 
     describe('🔐 Signature Validation', () => {
-        it('✅ Accepts valid signature for correct code and timestamp', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('✅ Accepts valid signature for correct code and timestamp', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
-            expect(actionCode.isValid).toBe(true);
+            expect(actionCode.isValid(protocol)).toBe(true);
             expect(actionCode.expired).toBe(false);
         });
 
-        it('❌ Rejects invalid signature for same code', () => {
+        it('❌ Rejects invalid signature for same code', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
-            const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
 
             // Create invalid signature (wrong message)
             const invalidMessage = 'wrong_message';
             const invalidSignature = createRealSignature(userKeypair, invalidMessage);
 
-            // The protocol will generate a new code with the invalid signature, but it won't match
-            const actionCode = protocol.generateActionCode(pubkey, invalidSignature, 'solana', 'DEFAULT', timestamp);
+            // Create action code manually with invalid signature
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature: invalidSignature,
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            // The generated code should be different from the expected code
-            expect(actionCode.code).not.toBe(code);
+            // The action code should be invalid due to signature mismatch
+            expect(solanaAdapter.verifyCodeSignature(actionCode)).toBe(false);
         });
 
-        it('❌ Rejects mismatched signature with different timestamp (slot)', () => {
+        it('❌ Rejects mismatched signature with different timestamp (slot)', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp1 = Date.now();
             const timestamp2 = timestamp1 + 1000; // 1 second later
 
-            // Generate code for timestamp1
-            const { code: code1 } = CodeGenerator.generateCode(pubkey, 'placeholder', 'DEFAULT', timestamp1);
-            const message1 = CodeGenerator.generateCodeSignatureMessage(code1, timestamp1);
+            // Generate code and signature for timestamp1
+            const { code: code1 } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp1);
+            const message1 = solanaAdapter.getCodeSignatureMessage(code1, timestamp1, 'DEFAULT');
             const signature1 = createRealSignature(userKeypair, message1);
 
-            // Try to use signature1 with timestamp2
-            const actionCode = protocol.generateActionCode(pubkey, signature1, 'solana', 'DEFAULT', timestamp2);
+            // Create action code manually with mismatched timestamp
+            const actionCode = ActionCode.fromPayload({
+                code: code1,
+                pubkey,
+                signature: signature1,
+                timestamp: timestamp2,
+                expiresAt: timestamp2 + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            expect(actionCode.isValid).toBe(false);
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Rejects valid signature used with wrong public key', () => {
+        it('❌ Rejects valid signature used with wrong public key', async () => {
             const wrongKeypair = Keypair.generate();
             const timestamp = Date.now();
 
             // Generate code and signature for userKeypair
             const { code } = CodeGenerator.generateCode(
                 userKeypair.publicKey.toBase58(),
-                'placeholder',
                 'DEFAULT',
                 timestamp
             );
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'DEFAULT');
             const signature = createRealSignature(userKeypair, message);
 
-            // Try to use signature with wrong public key
-            const actionCode = protocol.generateActionCode(
-                wrongKeypair.publicKey.toBase58(),
+            // Create action code manually with wrong public key
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey: wrongKeypair.publicKey.toBase58(),
                 signature,
-                'solana',
-                'DEFAULT',
-                timestamp
-            );
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            // The generated code should be different because the public key is different
-            expect(actionCode.code).not.toBe(code);
+            // The action code should be invalid due to signature mismatch
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
     });
 
     describe('🎭 Code Tampering', () => {
-        it('❌ Rejects code if it was tampered after generation (e.g., altered digit)', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('❌ Rejects code if it was tampered after generation (e.g., altered digit)', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // Tamper with the code by changing one digit
             const tamperedFields = {
@@ -140,38 +166,61 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             };
             const tamperedActionCode = ActionCode.fromPayload(tamperedFields);
 
-            expect(tamperedActionCode.isValid).toBe(false);
+            expect(tamperedActionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Rejects if prefix changed but signature reused', () => {
+        it('❌ Rejects if prefix changed but signature reused', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
 
             // Generate code and signature for 'TEST' prefix
-            const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', 'TEST', timestamp);
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
+            const { code } = CodeGenerator.generateCode(pubkey, 'TEST', timestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'TEST');
             const signature = createRealSignature(userKeypair, message);
 
-            // Try to use signature with 'DEMO' prefix
-            const actionCode = protocol.generateActionCode(pubkey, signature, 'solana', 'DEMO', timestamp);
+            // Create action code manually with different prefix
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'DEMO',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            // The generated code should be different because the prefix is different
-            expect(actionCode.code).not.toBe(code);
+            // The action code should be invalid due to signature mismatch
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Rejects expired code (older than current window + drift)', () => {
+        it('❌ Rejects expired code (older than current window + drift)', async () => {
             const expiredTimestamp = Date.now() - 200000; // 200 seconds ago (well beyond 2-minute TTL)
+            const pubkey = userKeypair.publicKey.toBase58();
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', expiredTimestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, expiredTimestamp, 'DEFAULT');
+            const signature = createRealSignature(userKeypair, message);
 
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', expiredTimestamp);
+            // Create action code manually with expired timestamp
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp: expiredTimestamp,
+                expiresAt: expiredTimestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            expect(actionCode.isValid).toBe(false);
+            expect(actionCode.isValid(protocol)).toBe(false);
             expect(actionCode.expired).toBe(true);
         });
     });
 
     describe('🔁 Replay Protection', () => {
-        it('❌ Rejects same code if it\'s already finalized', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('❌ Rejects same code if it\'s already finalized', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // Attach transaction and finalize
             const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
@@ -180,21 +229,21 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(finalizedCode.status).toBe('finalized');
 
             // Try to use the same code again
-            const replayCode = protocol.generateActionCode(
+            const replayCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                actionCode.signature,
+                async () => actionCode.signature,
                 'solana',
                 actionCode.prefix,
                 actionCode.timestamp
             );
 
             // The code itself is still valid, but in a real system you'd track usage
-            expect(replayCode.isValid).toBe(true);
+            expect(replayCode.isValid(protocol)).toBe(true);
             // In a real implementation, you'd check if the code was already used
         });
 
-        it('❌ Rejects attaching a new tx to a finalized code', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('❌ Rejects attaching a new tx to a finalized code', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // Attach transaction and finalize
             const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
@@ -207,13 +256,11 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(newAttachedCode.transaction?.transaction).toBe('another_transaction'); // Protocol allows overwriting
             expect(newAttachedCode.status).toBe('resolved'); // Status resets to resolved
         });
-
-
     });
 
     describe('🔐 Metadata Injection', () => {
-        it('❌ Fails if injected metadata in TX doesn\'t match code id or prefix', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
+        it('❌ Fails if injected metadata in TX doesn\'t match code id or prefix', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
 
             // Create protocol meta with wrong prefix
             const wrongMeta = protocol.createProtocolMeta(
@@ -235,8 +282,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(wrongInitiatorMeta.initiator).toBe(actionCode.pubkey);
         });
 
-        it('✅ Accepts injected meta only if matches ActionCode derivation', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEMO');
+        it('✅ Accepts injected meta only if matches ActionCode derivation', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'DEMO');
 
             // Create correct protocol meta
             const meta = protocol.createProtocolMeta(
@@ -252,8 +299,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(meta.params).toBe('valid_params');
         });
 
-        it('❌ Rejects metadata with unknown or malformed format', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('❌ Rejects metadata with unknown or malformed format', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // Try to create meta with malformed params
             const malformedMeta = protocol.createProtocolMeta(
@@ -268,31 +315,45 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     });
 
     describe('⏱ TTL Handling', () => {
-        it('✅ Accepts code within valid 2-minute window', () => {
+        it('✅ Accepts code within valid 2-minute window', async () => {
             const now = Date.now();
             const validTimestamp = now - 30000; // 30 seconds ago (within 2-minute window)
 
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', validTimestamp);
+            const { actionCode } = await generateValidActionCode(userKeypair, 'DEFAULT', validTimestamp);
 
-            expect(actionCode.isValid).toBe(true);
+            expect(actionCode.isValid(protocol)).toBe(true);
             expect(actionCode.expired).toBe(false);
             expect(actionCode.remainingTime).toBeGreaterThan(0);
         });
 
-        it('❌ Rejects code outside allowed window (now ± 1 slot drift)', () => {
+        it('❌ Rejects code outside allowed window (now ± 1 slot drift)', async () => {
             const now = Date.now();
             const expiredTimestamp = now - 150000; // 2.5 minutes ago (beyond 2-minute TTL)
+            const pubkey = userKeypair.publicKey.toBase58();
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', expiredTimestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, expiredTimestamp, 'DEFAULT');
+            const signature = createRealSignature(userKeypair, message);
 
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', expiredTimestamp);
+            // Create action code manually with expired timestamp
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp: expiredTimestamp,
+                expiresAt: expiredTimestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
 
-            expect(actionCode.isValid).toBe(false);
+            expect(actionCode.isValid(protocol)).toBe(false);
             expect(actionCode.expired).toBe(true);
             expect(actionCode.remainingTime).toBe(0);
         });
 
-        it('✅ Ensures expiresAt in ActionCode matches time logic', () => {
+        it('✅ Ensures expiresAt in ActionCode matches time logic', async () => {
             const timestamp = Date.now();
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', timestamp);
+            const { actionCode } = await generateValidActionCode(userKeypair, 'DEFAULT', timestamp);
 
             const expectedExpiresAt = timestamp + 120000; // 2 minutes (CODE_TTL)
             expect(actionCode.json.expiresAt).toBe(expectedExpiresAt);
@@ -302,19 +363,19 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     });
 
     describe('🧱 ActionCode Object Integrity', () => {
-        it('✅ .isValid() returns true only if all conditions match', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('✅ .isValid() returns true only if all conditions match', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // All conditions should be met
-            expect(actionCode.isValid).toBe(true);
+            expect(actionCode.isValid(protocol)).toBe(true);
             expect(actionCode.expired).toBe(false);
             expect(actionCode.remainingTime).toBeGreaterThan(0);
             expect(actionCode.status).toBe('pending');
         });
 
-        it('✅ .getRemainingTime() reflects accurate countdown', () => {
+        it('✅ .getRemainingTime() reflects accurate countdown', async () => {
             const timestamp = Date.now() - 30000; // 30 seconds ago
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', timestamp);
+            const { actionCode } = await generateValidActionCode(userKeypair, 'DEFAULT', timestamp);
 
             const remainingTime = actionCode.remainingTime;
             expect(remainingTime).toBeGreaterThan(0);
@@ -325,8 +386,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(timeString).toMatch(/^\d+m \d+s remaining$/);
         });
 
-        it('✅ .status transitions are respected (pending → resolved → finalized)', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('✅ .status transitions are respected (pending → resolved → finalized)', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             // Initial status
             expect(actionCode.status).toBe('pending');
@@ -340,8 +401,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(finalizedCode.status).toBe('finalized');
         });
 
-        it('❌ Code cannot transition to resolved without attached tx', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
+        it('❌ Code cannot transition to resolved without attached tx', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
 
             expect(actionCode.status).toBe('pending');
 
@@ -353,8 +414,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     });
 
     describe('🔐 Real Solana Transaction Security', () => {
-        it('✅ Validates real Solana transaction with protocol meta', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
+        it('✅ Validates real Solana transaction with protocol meta', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
 
             // Create protocol meta
             const meta = protocol.createProtocolMeta(
@@ -376,8 +437,8 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             expect(isValid).toBe(true);
         });
 
-        it('❌ Rejects transaction with tampered protocol meta', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
+        it('❌ Rejects transaction with tampered protocol meta', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
 
             // Create protocol meta
             const meta = protocol.createProtocolMeta(
@@ -402,99 +463,136 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     });
 
     describe('🔐 Core Signature Validation (Re-check)', () => {
-        it('✅ Valid signature → passes', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
-            expect(actionCode.isValid).toBe(true);
+        it('✅ Valid signature → passes', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
+            expect(actionCode.isValid(protocol)).toBe(true);
         });
 
-        it('❌ Wrong signature → fails', () => {
+        it('❌ Wrong signature → fails', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
-            
+
             // Generate code for one message
-            const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', 'DEFAULT', timestamp);
-            const correctMessage = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
+            const correctMessage = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'DEFAULT');
             const correctSignature = createRealSignature(userKeypair, correctMessage);
-            
+
             // Use wrong signature (signed for different message)
             const wrongMessage = 'completely_different_message';
             const wrongSignature = createRealSignature(userKeypair, wrongMessage);
-            
-            const actionCode = protocol.generateActionCode(pubkey, wrongSignature, 'solana', 'DEFAULT', timestamp);
-            expect(actionCode.code).not.toBe(code);
+
+            // Create action code manually with wrong signature
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature: wrongSignature,
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Signature signed for different slot → fails', () => {
+        it('❌ Signature signed for different slot → fails', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp1 = Date.now();
             const timestamp2 = timestamp1 + 1000; // Different slot
-            
+
             // Generate code and signature for timestamp1
-            const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', 'DEFAULT', timestamp1);
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp1);
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp1);
+            const message = solanaAdapter.getCodeSignatureMessage(code, timestamp1, 'DEFAULT');
             const signature = createRealSignature(userKeypair, message);
-            
-            // Try to use signature with timestamp2
-            const actionCode = protocol.generateActionCode(pubkey, signature, 'solana', 'DEFAULT', timestamp2);
-            expect(actionCode.isValid).toBe(false);
+
+            // Create action code manually with different timestamp
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp: timestamp2,
+                expiresAt: timestamp2 + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Signature signed for different code → fails', () => {
+        it('❌ Signature signed for different code → fails', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
-            
+
             // Generate code1 and signature for it
-            const { code: code1 } = CodeGenerator.generateCode(pubkey, 'placeholder', 'DEFAULT', timestamp);
-            const message1 = CodeGenerator.generateCodeSignatureMessage(code1, timestamp);
+            const { code: code1 } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
+            const message1 = solanaAdapter.getCodeSignatureMessage(code1, timestamp, 'DEFAULT');
             const signature1 = createRealSignature(userKeypair, message1);
-            
-            // Generate different code2
-            const { code: code2 } = CodeGenerator.generateCode(pubkey, 'different_placeholder', 'DEFAULT', timestamp);
-            
-            // Try to use signature1 with code2 generation
-            const actionCode = protocol.generateActionCode(pubkey, signature1, 'solana', 'DEFAULT', timestamp);
-            expect(actionCode.code).not.toBe(code2);
+
+            // Generate different code2 with different prefix
+            const { code: code2 } = CodeGenerator.generateCode(pubkey, 'TEST', timestamp);
+
+            // Create action code manually with signature1 but code2
+            const actionCode = ActionCode.fromPayload({
+                code: code2,
+                pubkey,
+                signature: signature1,
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'TEST',
+                chain: 'solana',
+                status: 'pending'
+            });
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Signature reused with different prefix → fails', () => {
+        it('❌ Signature reused with different prefix → fails', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
-            
+
             // Generate code and signature for 'TEST' prefix
-            const { code } = CodeGenerator.generateCode(pubkey, 'placeholder', 'TEST', timestamp);
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
+            const { code } = CodeGenerator.generateCode(pubkey, 'TEST', timestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'TEST');
             const signature = createRealSignature(userKeypair, message);
-            
-            // Try to use signature with 'DEMO' prefix
-            const actionCode = protocol.generateActionCode(pubkey, signature, 'solana', 'DEMO', timestamp);
-            expect(actionCode.code).not.toBe(code);
+
+            // Create action code manually with different prefix
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp,
+                expiresAt: timestamp + 120000,
+                prefix: 'DEMO',
+                chain: 'solana',
+                status: 'pending'
+            });
+            expect(actionCode.isValid(protocol)).toBe(false);
         });
     });
 
     describe('🎭 Code Integrity', () => {
-        it('❌ Tampered code (1 digit off) → fails', () => {
-            const { actionCode } = generateValidActionCode(userKeypair);
-            
+        it('❌ Tampered code (1 digit off) → fails', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair);
+
             // Tamper with the code by changing one digit
             const tamperedFields = {
                 ...actionCode.json,
                 code: actionCode.code.slice(0, -1) + ((parseInt(actionCode.code.slice(-1)) + 1) % 10)
             };
             const tamperedActionCode = ActionCode.fromPayload(tamperedFields);
-            
-            expect(tamperedActionCode.isValid).toBe(false);
+
+            expect(tamperedActionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Forged code with same prefix → fails', () => {
+        it('❌ Forged code with same prefix → fails', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
             const timestamp = Date.now();
-            
+
             // Generate valid code
-            const { code: validCode } = CodeGenerator.generateCode(pubkey, 'placeholder', 'TEST', timestamp);
-            
+            const { code: validCode } = CodeGenerator.generateCode(pubkey, 'TEST', timestamp);
+
             // Create forged code with same prefix but different derivation
             const forgedCode = 'TEST' + Math.random().toString().slice(2, 10);
-            
+
             // Try to create ActionCode with forged code
             const forgedFields = {
                 code: forgedCode,
@@ -506,24 +604,39 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
                 status: 'pending',
                 signature: 'forged_signature' // Required field
             };
-            
-            const forgedActionCode = ActionCode.fromPayload(forgedFields as ActionCodeFields<string>);
-            expect(forgedActionCode.isValid).toBe(false);
+
+            const forgedActionCode = ActionCode.fromPayload(forgedFields as ActionCodeFields);
+            expect(forgedActionCode.isValid(protocol)).toBe(false);
         });
 
-        it('❌ Using expired code → fails', () => {
+        it('❌ Using expired code → fails', async () => {
             const expiredTimestamp = Date.now() - 200000; // 200 seconds ago (beyond TTL)
-            const { actionCode } = generateValidActionCode(userKeypair, 'DEFAULT', expiredTimestamp);
-            
-            expect(actionCode.isValid).toBe(false);
+            const pubkey = userKeypair.publicKey.toBase58();
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', expiredTimestamp);
+            const message = solanaAdapter.getCodeSignatureMessage(code, expiredTimestamp, 'DEFAULT');
+            const signature = createRealSignature(userKeypair, message);
+
+            // Create action code manually with expired timestamp
+            const actionCode = ActionCode.fromPayload({
+                code,
+                pubkey,
+                signature,
+                timestamp: expiredTimestamp,
+                expiresAt: expiredTimestamp + 120000,
+                prefix: 'DEFAULT',
+                chain: 'solana',
+                status: 'pending'
+            });
+
+            expect(actionCode.isValid(protocol)).toBe(false);
             expect(actionCode.expired).toBe(true);
         });
     });
 
     describe('🧾 Metadata Injection', () => {
-                it('❌ Injected meta doesn\'t match code.id → rejected', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
-            
+        it('❌ Injected meta doesn\'t match code.id → rejected', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
+
             // Create protocol meta with the same timestamp as the action code
             // This simulates what would happen in a real implementation
             const meta = ProtocolMetaParser.fromInitiator(
@@ -533,52 +646,52 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
                 'params',
                 actionCode.timestamp
             );
-            
+
             // The meta ID should match the action code's codeHash
             expect(meta.id).toBe(actionCode.codeHash);
-            
+
             // If we try to validate with a different code ID, it should fail
             const tamperedMeta = {
                 ...meta,
                 id: 'DIFFERENT_CODE_ID'
             };
-            
+
             // This would fail validation in a real transaction
             expect(tamperedMeta.id).not.toBe(actionCode.codeHash);
         });
 
-        it('❌ Meta prefix mismatch → rejected', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
-            
+        it('❌ Meta prefix mismatch → rejected', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
+
             // Create protocol meta with wrong prefix
             const wrongMeta = protocol.createProtocolMeta(
                 actionCode,
                 authorityKeypair.publicKey.toBase58(),
                 'params'
             );
-            
+
             // The meta should match the action code prefix
             expect(wrongMeta.prefix).toBe('TEST');
-            
+
             // If we try to validate with wrong prefix, it should fail
             const tamperedMeta = {
                 ...wrongMeta,
                 prefix: 'WRONG_PREFIX'
             };
-            
+
             expect(tamperedMeta.prefix).not.toBe(actionCode.prefix);
         });
 
-        it('✅ Unknown fields in meta are ignored or handled gracefully', () => {
-            const { actionCode } = generateValidActionCode(userKeypair, 'TEST');
-            
+        it('✅ Unknown fields in meta are ignored or handled gracefully', async () => {
+            const { actionCode } = await generateValidActionCode(userKeypair, 'TEST');
+
             // Create protocol meta
             const meta = protocol.createProtocolMeta(
                 actionCode,
                 authorityKeypair.publicKey.toBase58(),
                 'params'
             );
-            
+
             // Add unknown fields to meta
             const metaWithUnknownFields = {
                 ...meta,
@@ -586,7 +699,7 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
                 unknownField2: { nested: 'value2' },
                 extraData: [1, 2, 3]
             };
-            
+
             // The meta creation should still work with unknown fields
             expect(metaWithUnknownFields.version).toBe('1');
             expect(metaWithUnknownFields.prefix).toBe('TEST');

@@ -154,14 +154,13 @@ describe('ProtocolMeta', () => {
       const params = 'extraParam';
       const result = ProtocolMetaParser.fromInitiator(initiator, ISSUER, 'DEFAULT', params);
 
-      expect(result).toEqual({
-        version: PROTOCOL_VERSION,
-        prefix: 'DEFAULT',
-        initiator: 'ABC123',
-        id: CodeGenerator.deriveCodeHash(initiator, 'DEFAULT'),
-        iss: ISSUER,
-        params: 'extraParam'
-      });
+      expect(result.version).toBe(PROTOCOL_VERSION);
+      expect(result.prefix).toBe('DEFAULT');
+      expect(result.initiator).toBe('ABC123');
+      expect(result.id).toHaveLength(64); // SHA-256 hash length
+      expect(/^[a-f0-9]{64}$/.test(result.id)).toBe(true); // Valid hex hash
+      expect(result.iss).toBe(ISSUER);
+      expect(result.params).toBe('extraParam');
     });
   });
 

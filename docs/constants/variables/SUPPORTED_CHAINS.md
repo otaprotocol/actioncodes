@@ -8,4 +8,4 @@
 
 > `const` **SUPPORTED\_CHAINS**: readonly \[`"solana"`\]
 
-Defined in: [constants.ts:8](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/constants.ts#L8)
+Defined in: [constants.ts:8](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/constants.ts#L8)

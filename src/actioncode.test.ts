@@ -1,15 +1,21 @@
 import { ActionCode, ActionCodeFields } from './actioncode';
 import { CodeGenerator } from './codegen';
 import { SUPPORTED_CHAINS } from './constants';
+import { ActionCodesProtocol } from './protocol';
+import { SolanaAdapter } from './adapters/solana/solana';
+import { Buffer } from "buffer";
+import { Keypair } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
 
 describe('ActionCode', () => {
     const testPubkey = '9sbZg6E3HbMdzEDXUGvXTo7WTxEfNMPkRjJ3xCTpSFLW';
     const testSignature = 'test_signature_for_actioncode';
     const testTimestamp = Date.now();
     const testExpiresAt = testTimestamp + 120000; // 2 minutes later
-
-    const createTestActionCode = (overrides: Partial<ActionCodeFields<any>> = {}): ActionCode<any> => {
-        const defaultFields: ActionCodeFields<any> = {
+    const protocol = ActionCodesProtocol.create();
+    protocol.registerAdapter(new SolanaAdapter());
+    const createTestActionCode = (overrides: Partial<ActionCodeFields> = {}): ActionCode => {
+        const defaultFields: ActionCodeFields = {
             code: '12345678',
             prefix: 'DEFAULT',
             pubkey: testPubkey,
@@ -43,7 +49,7 @@ describe('ActionCode', () => {
             it('should accept optional transaction and metadata', () => {
                 const actionCode = createTestActionCode({
                     transaction: {
-                        transaction: { amount: 100, recipient: 'recipient' },
+                        transaction: 'transaction',
                         txSignature: 'test_signature',
                         txType: 'payment'
                     },
@@ -54,7 +60,7 @@ describe('ActionCode', () => {
                 });
 
                 expect(actionCode.transaction).toEqual({
-                    transaction: { amount: 100, recipient: 'recipient' },
+                    transaction: 'transaction',
                     txSignature: 'test_signature',
                     txType: 'payment'
                 });
@@ -97,7 +103,7 @@ describe('ActionCode', () => {
 
                 expect(typeof encoded).toBe('string');
                 expect(encoded.length).toBeGreaterThan(0);
-                expect(() => atob(encoded)).not.toThrow();
+                expect(() => Buffer.from(encoded, 'base64')).not.toThrow();
             });
 
             it('should produce consistent encoding', () => {
@@ -112,7 +118,7 @@ describe('ActionCode', () => {
         describe('validate', () => {
             it('should validate ActionCode using CodeGenerator', () => {
                 const actionCode = createTestActionCode();
-                const isValid = actionCode.isValid;
+                const isValid = actionCode.isValid(protocol);
 
                 // This will depend on the actual validation logic in CodeGenerator
                 expect(typeof isValid).toBe('boolean');
@@ -235,7 +241,7 @@ describe('ActionCode', () => {
 
             it('should return transaction data when present', () => {
                 const transaction = {
-                    transaction: { amount: 100, token: 'USDC' },
+                    transaction: 'transaction',
                     txSignature: 'test_sig',
                     txType: 'transfer'
                 };
@@ -339,57 +345,92 @@ describe('ActionCode', () => {
 
     describe('Chain Agnosticism', () => {
         it('should support all defined chains', () => {
-            SUPPORTED_CHAINS.forEach(chain => {
-                const actionCode = createTestActionCode({ chain });
-                expect(actionCode.chain).toBe(chain);
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
+                chain: 'solana',
+                status: 'pending',
+                expiresAt: Date.now() + 120000
             });
+
+            expect(actionCode.chain).toBe('solana');
         });
 
         it('should handle generic transaction types', () => {
-            // Test with Solana transaction
-            const solanaTx = { instructions: [], signers: [] };
-            const solanaTransaction = {
-                transaction: solanaTx,
-                txSignature: 'test_sig',
-                txType: 'transfer'
-            };
-            const solanaActionCode = createTestActionCode({
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
                 chain: 'solana',
-                transaction: solanaTransaction
+                status: 'pending',
+                expiresAt: Date.now() + 120000,
+                transaction: {
+                    transaction: 'test_transaction',
+                    txType: 'payment'
+                }
             });
 
-            expect(solanaActionCode.transaction).toEqual(solanaTransaction);
+            expect(actionCode.transaction?.transaction).toBe('test_transaction');
+            expect(actionCode.transaction?.txType).toBe('payment');
+        });
 
-            // Test with different transaction types
-            const customTx = { customField: 'value', data: '0x' };
-            const customTransaction = {
-                transaction: customTx,
-                txSignature: 'test_sig',
-                txType: 'custom'
-            };
-            const customActionCode = createTestActionCode({
+        it('should throw error when chain adapter is not found', () => {
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
                 chain: 'solana',
-                transaction: customTransaction
+                status: 'pending',
+                expiresAt: Date.now() + 120000
             });
 
-            expect(customActionCode.transaction).toEqual(customTransaction);
+            const protocol = ActionCodesProtocol.create();
+            // Don't register any adapters
+
+            expect(() => actionCode.isValid(protocol)).toThrow('Chain adapter not found for chain solana');
         });
     });
 
     describe('Integration Tests', () => {
         it('should work with real code generation', () => {
-            const timestamp = Date.now();
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            // Use a timestamp that's slightly in the past to ensure it's within the valid window
+            const timestamp = Date.now() - 1000; // 1 second in the past
+            const keypair = Keypair.generate();
+            const pubkey = keypair.publicKey.toBase58();
+            const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
             const expiresAt = timestamp + 120000;
+
+            // Create a valid signature for the generated code
+            const solanaAdapter = new SolanaAdapter();
+            const message = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'DEFAULT');
+            const messageBytes = new TextEncoder().encode(message);
+            const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+            const signature = Buffer.from(signatureBytes).toString('base64');
 
             const actionCode = createTestActionCode({
                 code,
                 timestamp,
-                expiresAt
+                expiresAt,
+                signature,
+                pubkey
             });
 
             expect(actionCode.code).toBe(code);
-            expect(actionCode.isValid).toBe(true);
+
+            // Debug the validation
+            const adapter = protocol.getChainAdapter('solana');
+            if (!adapter) throw new Error('Solana adapter not found');
+
+            const isValid = actionCode.isValid(protocol);
+
+            expect(isValid).toBe(true);
         });
 
         it('should handle full lifecycle with all helpers', () => {

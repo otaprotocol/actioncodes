@@ -2,6 +2,7 @@ import { ActionCodesProtocol, ProtocolConfig } from './protocol';
 import { ProtocolMetaV1 } from './meta';
 import { ActionCode } from './actioncode';
 import { BaseChainAdapter } from './adapters/base';
+import { SolanaAdapter } from './adapters/solana';
 
 // Mock chain adapter for testing
 class MockChainAdapter extends BaseChainAdapter<any> {
@@ -25,6 +26,10 @@ class MockChainAdapter extends BaseChainAdapter<any> {
 
     protected validateTransactionIntegrity(): boolean {
         return true; // Mock integrity validation
+    }
+
+    public verifyCodeSignature(actionCode: ActionCode): boolean {
+        return true; // Mock code signature verification
     }
 }
 
@@ -98,44 +103,104 @@ describe('ActionCodesProtocol', () => {
     });
 
     describe('Action Code Generation', () => {
-        beforeEach(() => {
-            protocol.registerAdapter(mockAdapter);
-        });
+        it('should generate action code for supported chain', async () => {
+            const protocol = ActionCodesProtocol.create();
+            const solanaAdapter = new SolanaAdapter();
+            protocol.registerAdapter(solanaAdapter);
 
-        it('should generate action code for supported chain', () => {
-            const pubkey = 'test-pubkey';
-            const signature = 'test-signature';
-            const chain = 'mock' as any;
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('test_signature');
 
-            const actionCode = protocol.generateActionCode(pubkey, signature, chain);
+            // Mock verifyCodeSignature to return true for this test
+            jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(true);
 
-            expect(actionCode.code).toMatch(/^\d{8}$/);
+            const actionCode = await protocol.createActionCode(pubkey, signFn, 'solana');
+
+            expect(actionCode.code).toHaveLength(8);
             expect(actionCode.pubkey).toBe(pubkey);
-            expect(actionCode.signature).toBe(signature);
-            expect(actionCode.chain).toBe(chain);
-            expect(actionCode.prefix).toBe('DEFAULT');
+            expect(actionCode.chain).toBe('solana');
             expect(actionCode.status).toBe('pending');
         });
 
-        it('should generate action code with custom prefix', () => {
-            const pubkey = 'test-pubkey';
-            const signature = 'test-signature';
-            const chain = 'mock' as any;
-            const prefix = 'CUSTOM';
+        it('should generate action code with custom prefix', async () => {
+            const protocol = ActionCodesProtocol.create();
+            const solanaAdapter = new SolanaAdapter();
+            protocol.registerAdapter(solanaAdapter);
 
-            const actionCode = protocol.generateActionCode(pubkey, signature, chain, prefix);
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('test_signature');
 
-            expect(actionCode.prefix).toBe(prefix);
+            // Mock verifyCodeSignature to return true for this test
+            jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(true);
+
+            const actionCode = await protocol.createActionCode(pubkey, signFn, 'solana', 'TEST');
+
+            expect(actionCode.prefix).toBe('TEST');
         });
 
-        it('should throw error for unsupported chain', () => {
-            const pubkey = 'test-pubkey';
-            const signature = 'test-signature';
-            const chain = 'unsupported' as any;
+        it('should throw error for unsupported chain', async () => {
+            const protocol = ActionCodesProtocol.create();
 
-            expect(() => {
-                protocol.generateActionCode(pubkey, signature, chain);
-            }).toThrow('Chain \'unsupported\' is not supported');
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('test_signature');
+
+            await expect(
+                protocol.createActionCode(pubkey, signFn, 'unsupported_chain' as any)
+            ).rejects.toThrow("Chain 'unsupported_chain' is not supported. Registered chains: ");
+        });
+
+        it('should throw error when no adapter is found', async () => {
+            const protocol = ActionCodesProtocol.create();
+            // Don't register any adapters
+
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('test_signature');
+
+            await expect(
+                protocol.createActionCode(pubkey, signFn, 'solana')
+            ).rejects.toThrow("Chain 'solana' is not supported.");
+        });
+
+        it('should throw error when signature verification fails', async () => {
+            const protocol = ActionCodesProtocol.create();
+            const solanaAdapter = new SolanaAdapter();
+            protocol.registerAdapter(solanaAdapter);
+
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('invalid_signature');
+
+            await expect(
+                protocol.createActionCode(pubkey, signFn, 'solana')
+            ).rejects.toThrow('Invalid signature for generated code');
+        });
+    });
+
+    describe('Error handling', () => {
+        it('should throw error when no adapter is found for chain', async () => {
+            const protocol = ActionCodesProtocol.create();
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('test_signature');
+
+            // Test line 119: Chain not supported
+            await expect(
+                protocol.createActionCode(pubkey, signFn, 'unsupported_chain' as any)
+            ).rejects.toThrow("Chain 'unsupported_chain' is not supported");
+        });
+
+        it('should throw error when adapter verification fails', async () => {
+            const protocol = ActionCodesProtocol.create();
+            const solanaAdapter = new SolanaAdapter();
+            protocol.registerAdapter(solanaAdapter);
+
+            const pubkey = 'test_pubkey';
+            const signFn = jest.fn().mockResolvedValue('invalid_signature');
+
+            // Mock verifyCodeSignature to return false
+            jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(false);
+
+            await expect(
+                protocol.createActionCode(pubkey, signFn, 'solana')
+            ).rejects.toThrow('Invalid signature for generated code');
         });
     });
 
@@ -144,19 +209,19 @@ describe('ActionCodesProtocol', () => {
             protocol.registerAdapter(mockAdapter);
         });
 
-        it('should validate action code', () => {
+        it('should validate action code', async () => {
             const pubkey = 'test-pubkey';
             const signature = 'test-signature';
             const chain = 'mock';
 
-            const actionCode = protocol.generateActionCode(pubkey, signature, chain as any);
+            const actionCode = await protocol.createActionCode(pubkey, async () => signature, chain as any);
             const isValid = protocol.validateActionCode(actionCode);
 
             expect(isValid).toBe(true);
         });
 
         it('should return false for unsupported chain', () => {
-            const actionCode = ActionCode.fromPayload<string>({
+            const actionCode = ActionCode.fromPayload({
                 code: '12345678',
                 prefix: 'DEFAULT',
                 pubkey: 'test-pubkey',
@@ -171,8 +236,8 @@ describe('ActionCodesProtocol', () => {
             expect(isValid).toBe(false);
         });
 
-        it('should return false for expired action code', () => {
-            const actionCode = ActionCode.fromPayload<string>({
+        it('should return false for expired action code', async () => {
+            const actionCode = ActionCode.fromPayload({
                 code: '12345678',
                 prefix: 'DEFAULT',
                 pubkey: 'test-pubkey',
@@ -189,38 +254,85 @@ describe('ActionCodesProtocol', () => {
     });
 
     describe('Transaction Management', () => {
-        beforeEach(() => {
-            protocol.registerAdapter(mockAdapter);
+        it('should attach transaction to action code', () => {
+            const protocol = ActionCodesProtocol.create();
+            const solanaAdapter = new SolanaAdapter();
+            protocol.registerAdapter(solanaAdapter);
+            
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
+                chain: 'solana',
+                status: 'pending',
+                expiresAt: Date.now() + 120000
+            });
+
+            const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
+
+            expect(updatedCode.transaction?.transaction).toBe('transaction_data');
+            expect(updatedCode.transaction?.txType).toBe('payment');
+            expect(updatedCode.status).toBe('resolved');
         });
 
-        it('should attach transaction to action code', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
-            const transaction = 'mock-transaction';
+        it('should throw error when attaching transaction to unsupported chain', () => {
+            const protocol = ActionCodesProtocol.create();
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
+                chain: 'unsupported_chain' as any,
+                status: 'pending',
+                expiresAt: Date.now() + 120000
+            });
 
-            const updatedActionCode = protocol.attachTransaction(actionCode, transaction);
-
-            expect(updatedActionCode.transaction).toBeDefined();
-            expect(updatedActionCode.transaction?.transaction).toBe(transaction);
-            expect(updatedActionCode.status).toBe('resolved');
+            expect(() => {
+                protocol.attachTransaction(actionCode, 'transaction_data');
+            }).toThrow("Chain 'unsupported_chain' is not supported");
         });
 
         it('should finalize action code with transaction signature', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
-            const transaction = 'mock-transaction';
-            const txSignature = 'mock-signature';
+            const protocol = ActionCodesProtocol.create();
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
+                chain: 'solana',
+                status: 'resolved',
+                expiresAt: Date.now() + 120000,
+                transaction: {
+                    transaction: 'transaction_data',
+                    txType: 'payment'
+                }
+            });
 
-            const updatedActionCode = protocol.attachTransaction(actionCode, transaction);
-            const finalizedActionCode = protocol.finalizeActionCode(updatedActionCode, txSignature);
+            const finalizedCode = protocol.finalizeActionCode(actionCode, 'tx_signature');
 
-            expect(finalizedActionCode.transaction?.txSignature).toBe(txSignature);
-            expect(finalizedActionCode.status).toBe('finalized');
+            expect(finalizedCode.transaction?.txSignature).toBe('tx_signature');
+            expect(finalizedCode.status).toBe('finalized');
         });
 
         it('should throw error when finalizing without transaction', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+            const protocol = ActionCodesProtocol.create();
+            const actionCode = ActionCode.fromPayload({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test_pubkey',
+                timestamp: Date.now(),
+                signature: 'test_signature',
+                chain: 'solana',
+                status: 'pending',
+                expiresAt: Date.now() + 120000
+            });
 
             expect(() => {
-                protocol.finalizeActionCode(actionCode, 'signature');
+                protocol.finalizeActionCode(actionCode, 'tx_signature');
             }).toThrow('Cannot finalize ActionCode without attached transaction');
         });
     });
@@ -230,8 +342,8 @@ describe('ActionCodesProtocol', () => {
             protocol.registerAdapter(mockAdapter);
         });
 
-        it('should create protocol meta', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+        it('should create protocol meta', async () => {
+            const actionCode = await protocol.createActionCode('test-pubkey', async () => 'test-signature', 'mock' as any);
             const meta = protocol.createProtocolMeta(actionCode, 'issuer-pubkey', 'params');
 
             expect(meta.version).toBe('1');
@@ -240,16 +352,16 @@ describe('ActionCodesProtocol', () => {
             expect(meta.params).toBe('params');
         });
 
-        it('should encode protocol meta', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+        it('should encode protocol meta', async () => {
+            const actionCode = await protocol.createActionCode('test-pubkey', async () => 'test-signature', 'mock' as any);
             const meta = protocol.createProtocolMeta(actionCode);
 
             const encoded = protocol.encodeProtocolMeta(meta, 'mock');
             expect(encoded).toEqual({ encoded: meta });
         });
 
-        it('should decode protocol meta', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+        it('should decode protocol meta', async () => {
+            const actionCode = await protocol.createActionCode('test-pubkey', async () => 'test-signature', 'mock' as any);
             const meta = protocol.createProtocolMeta(actionCode);
             const encoded = { encoded: meta };
 
@@ -257,7 +369,7 @@ describe('ActionCodesProtocol', () => {
             expect(decoded).toEqual(meta);
         });
 
-        it('should validate transaction', () => {
+        it('should validate transaction', async () => {
             const transaction = { encoded: { version: '1', prefix: 'DEFAULT' } };
             const authorities = ['authority1', 'authority2'];
 
@@ -273,8 +385,8 @@ describe('ActionCodesProtocol', () => {
             expect(isNotTampered).toBe(true);
         });
 
-        it('should decode protocol meta with type safety', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+        it('should decode protocol meta with type safety', async () => {
+            const actionCode = await protocol.createActionCode('test-pubkey', async () => 'test-signature', 'mock' as any);
             const meta = protocol.createProtocolMeta(actionCode);
             const encoded = { encoded: meta };
 
@@ -282,7 +394,7 @@ describe('ActionCodesProtocol', () => {
             expect(decoded).toEqual(meta);
         });
 
-        it('should validate transaction with type safety', () => {
+        it('should validate transaction with type safety', async () => {
             const transaction = { encoded: { version: '1', prefix: 'DEFAULT' } };
             const authorities = ['authority1', 'authority2'];
 
@@ -290,8 +402,8 @@ describe('ActionCodesProtocol', () => {
             expect(isValid).toBe(true);
         });
 
-        it('should throw error for unsupported chain in encode', () => {
-            const actionCode = protocol.generateActionCode('test-pubkey', 'test-signature', 'mock' as any);
+        it('should throw error for unsupported chain in encode', async () => {
+            const actionCode = await protocol.createActionCode('test-pubkey', async () => 'test-signature', 'mock' as any);
             const meta = protocol.createProtocolMeta(actionCode);
 
             expect(() => {
@@ -325,7 +437,7 @@ describe('ActionCodesProtocol', () => {
         });
 
         it('should throw error for unsupported chain in attachTransaction', () => {
-            const actionCode = ActionCode.fromPayload<string>({
+            const actionCode = ActionCode.fromPayload({
                 code: '12345678',
                 prefix: 'DEFAULT',
                 pubkey: 'test-pubkey',

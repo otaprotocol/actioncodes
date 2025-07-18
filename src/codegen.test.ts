@@ -55,7 +55,7 @@ describe('CodeGenerator', () => {
     describe('generateCode', () => {
         it('should generate 8-digit codes for DEFAULT prefix', () => {
             const timestamp = 1640995200000;
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
             expect(code).toHaveLength(8);
             expect(/^\d{8}$/.test(code)).toBe(true);
@@ -64,7 +64,7 @@ describe('CodeGenerator', () => {
         it('should generate 8-digit codes for custom prefixes', () => {
             const timestamp = 1640995200000;
             const prefix = 'CUSTOM';
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, prefix, timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
             expect(code).toHaveLength(8);
             expect(/^\d{8}$/.test(code)).toBe(true);
@@ -72,8 +72,8 @@ describe('CodeGenerator', () => {
 
         it('should generate deterministic codes for same inputs', () => {
             const timestamp = 1640995200000;
-            const { code: code1 } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
-            const { code: code2 } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code: code1 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+            const { code: code2 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
             expect(code1).toBe(code2);
         });
@@ -83,16 +83,16 @@ describe('CodeGenerator', () => {
             const pubkey1 = '9sbZg6E3HbMdzEDXUGvXTo7WTxEfNMPkRjJ3xCTpSFLW';
             const pubkey2 = '8sbZg6E3HbMdzEDXUGvXTo7WTxEfNMPkRjJ3xCTpSFLW';
 
-            const { code: code1 } = CodeGenerator.generateCode(pubkey1, testSignature, 'DEFAULT', timestamp);
-            const { code: code2 } = CodeGenerator.generateCode(pubkey2, testSignature, 'DEFAULT', timestamp);
+            const { code: code1 } = CodeGenerator.generateCode(pubkey1, 'DEFAULT', timestamp);
+            const { code: code2 } = CodeGenerator.generateCode(pubkey2, 'DEFAULT', timestamp);
 
             expect(code1).not.toBe(code2);
         });
 
         it('should generate different codes for different prefixes', () => {
             const timestamp = 1640995200000;
-            const { code: code1 } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
-            const { code: code2 } = CodeGenerator.generateCode(testPubkey, testSignature, 'CUSTOM', timestamp);
+            const { code: code1 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+            const { code: code2 } = CodeGenerator.generateCode(testPubkey, 'CUSTOM', timestamp);
 
             expect(code1).not.toBe(code2);
         });
@@ -101,8 +101,8 @@ describe('CodeGenerator', () => {
             const timestamp1 = 1640995200000;
             const timestamp2 = timestamp1 + CODE_TTL; // Next time slot equivalent
 
-            const { code: code1 } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp1);
-            const { code: code2 } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp2);
+            const { code: code1 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp1);
+            const { code: code2 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp2);
 
             expect(code1).not.toBe(code2);
         });
@@ -110,7 +110,7 @@ describe('CodeGenerator', () => {
         it('should pad codes with leading zeros for DEFAULT prefix', () => {
             // This test might be flaky due to hash randomness, but it should work most of the time
             const timestamp = 1640995200000;
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
             expect(code).toHaveLength(8);
             expect(/^\d{8}$/.test(code)).toBe(true);
@@ -119,15 +119,15 @@ describe('CodeGenerator', () => {
         it('should pad codes with leading zeros for custom prefix', () => {
             const timestamp = 1640995200000;
             const prefix = 'TEST';
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, prefix, timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
             expect(code).toHaveLength(8);
             expect(/^\d{8}$/.test(code)).toBe(true);
         });
 
         it('should use current time when no timestamp provided', () => {
-            const { code: code1 } = CodeGenerator.generateCode(testPubkey, testSignature);
-            const { code: code2 } = CodeGenerator.generateCode(testPubkey, testSignature);
+            const { code: code1 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT');
+            const { code: code2 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT');
 
             // Codes should be the same if generated within the same time slot
             expect(code1).toBe(code2);
@@ -135,9 +135,9 @@ describe('CodeGenerator', () => {
 
         it('should throw error for invalid prefixes', () => {
             const timestamp = 1640995200000;
-            expect(() => CodeGenerator.generateCode(testPubkey, testSignature, 'AB', timestamp)).toThrow();
-            expect(() => CodeGenerator.generateCode(testPubkey, testSignature, 'VERYLONGPREFIX', timestamp)).toThrow();
-            expect(() => CodeGenerator.generateCode(testPubkey, testSignature, 'ABC123', timestamp)).toThrow();
+            expect(() => CodeGenerator.generateCode(testPubkey, 'AB', timestamp)).toThrow();
+            expect(() => CodeGenerator.generateCode(testPubkey, 'VERYLONGPREFIX', timestamp)).toThrow();
+            expect(() => CodeGenerator.generateCode(testPubkey, 'ABC123', timestamp)).toThrow();
         });
     });
 
@@ -185,29 +185,12 @@ describe('CodeGenerator', () => {
         it('should return hash when timestamp is explicitly provided', () => {
             const timestamp = 1640995200000;
             const hash = CodeGenerator.deriveCodeHash(testPubkey, 'DEFAULT', timestamp);
-            
+
             expect(hash).toHaveLength(64);
             expect(/^[a-f0-9]{64}$/.test(hash)).toBe(true);
         });
     });
 
-    describe('generateCodeSignatureMessage', () => {
-        it('should generate correct signature message format', () => {
-            const code = '12345678';
-            const timestamp = 1234567890;
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
-
-            expect(message).toBe(`actioncodes:${code}:${timestamp}`);
-        });
-
-        it('should work with different codes, prefixes and timestamps', () => {
-            const code = '87654321';
-            const timestamp = 9876543210;
-            const message = CodeGenerator.generateCodeSignatureMessage(code, timestamp);
-
-            expect(message).toBe(`actioncodes:${code}:${timestamp}`);
-        });
-    });
 
     describe('Canonical Prefix', () => {
         it('should always use lowercase prefix with no trailing colon', () => {
@@ -219,9 +202,9 @@ describe('CodeGenerator', () => {
     describe('validateCode', () => {
         it('should validate correct code with DEFAULT prefix', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
-            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'DEFAULT');
+            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, 'DEFAULT');
 
             expect(isValid).toBe(true);
         });
@@ -229,9 +212,9 @@ describe('CodeGenerator', () => {
         it('should validate correct code with custom prefix', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
             const prefix = 'CUSTOM';
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, prefix, timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
-            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, prefix);
+            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, prefix);
 
             expect(isValid).toBe(true);
         });
@@ -240,7 +223,7 @@ describe('CodeGenerator', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
             const wrongCode = '87654321';
 
-            const isValid = CodeGenerator.validateCode(wrongCode, testPubkey, timestamp, testSignature, 'DEFAULT');
+            const isValid = CodeGenerator.validateCode(wrongCode, testPubkey, timestamp, 'DEFAULT');
 
             expect(isValid).toBe(false);
         });
@@ -248,65 +231,186 @@ describe('CodeGenerator', () => {
         it('should reject code for wrong timestamp', () => {
             const timestamp1 = Date.now() - 1000; // 1 second ago, still valid
             const timestamp2 = timestamp1 + CODE_TTL + 1000; // Outside valid window
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp1);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp1);
 
-            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp2, testSignature, 'DEFAULT');
+            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp2, 'DEFAULT');
 
             expect(isValid).toBe(false);
         });
 
         it('should reject code for wrong prefix', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
-            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'CUSTOM');
+            const isValid = CodeGenerator.validateCode(code, testPubkey, timestamp, 'CUSTOM');
 
             expect(isValid).toBe(false);
         });
 
         it('should throw error for invalid prefixes', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
-            const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', timestamp);
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
 
-            expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'AB')).toThrow();
-            expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'VERYLONGPREFIX')).toThrow();
+            expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, 'AB')).toThrow();
+            expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, 'VERYLONGPREFIX')).toThrow();
         });
     });
 
     describe('isValidTimestamp', () => {
-      it('should return true for current timestamp', () => {
-        const now = Date.now();
-        const isValid = CodeGenerator.isValidTimestamp(now);
-        expect(isValid).toBe(true);
-      });
+        it('should return true for current timestamp', () => {
+            const now = Date.now();
+            const isValid = CodeGenerator.isValidTimestamp(now);
+            expect(isValid).toBe(true);
+        });
 
-      it('should return true for timestamp within time window', () => {
-        const future = Date.now() + CODE_TTL - 1000; // 1 second before expiry
-        const isValid = CodeGenerator.isValidTimestamp(future);
-        expect(isValid).toBe(true);
-      });
+        it('should return true for timestamp within time window', () => {
+            const future = Date.now() + CODE_TTL - 1000; // 1 second before expiry
+            const isValid = CodeGenerator.isValidTimestamp(future);
+            expect(isValid).toBe(true);
+        });
 
-      it('should return true for timestamp at time window boundary', () => {
-        const boundary = Date.now() + CODE_TTL;
-        const isValid = CodeGenerator.isValidTimestamp(boundary);
-        expect(isValid).toBe(true);
-      });
+        it('should return true for timestamp at time window boundary', () => {
+            const boundary = Date.now() + CODE_TTL;
+            const isValid = CodeGenerator.isValidTimestamp(boundary);
+            expect(isValid).toBe(true);
+        });
 
-      it('should return false for negative timestamp', () => {
-        const isValid = CodeGenerator.isValidTimestamp(-1000);
-        expect(isValid).toBe(false);
-      });
+        it('should return false for negative timestamp', () => {
+            const isValid = CodeGenerator.isValidTimestamp(-1000);
+            expect(isValid).toBe(false);
+        });
 
-      it('should return false for timestamp beyond time window', () => {
-        const beyond = Date.now() + CODE_TTL + 1000; // 1 second beyond expiry
-        const isValid = CodeGenerator.isValidTimestamp(beyond);
-        expect(isValid).toBe(false);
-      });
+        it('should return false for timestamp beyond time window', () => {
+            const beyond = Date.now() + CODE_TTL + 1000; // 1 second beyond expiry
+            const isValid = CodeGenerator.isValidTimestamp(beyond);
+            expect(isValid).toBe(false);
+        });
 
-      it('should return true for zero timestamp', () => {
-        const isValid = CodeGenerator.isValidTimestamp(0);
-        expect(isValid).toBe(true);
-      });
+        it('should return true for zero timestamp', () => {
+            const isValid = CodeGenerator.isValidTimestamp(0);
+            expect(isValid).toBe(true);
+        });
+    });
+
+
+
+    describe('Error Cases', () => {
+        it('should handle invalid prefix in normalizePrefix', () => {
+            expect(() => CodeGenerator.normalizePrefix('12')).toThrow('Invalid prefix: 12. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle invalid prefix in deriveCodeHash', () => {
+            expect(() => CodeGenerator.deriveCodeHash('pubkey', '12')).toThrow('Invalid prefix: 12. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle invalid prefix in validateCode', () => {
+            expect(() => CodeGenerator.validateCode('12345678', 'pubkey', Date.now(), '12')).toThrow('Invalid prefix: 12. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle invalid prefix in getExpectedCode', () => {
+            expect(() => CodeGenerator.getExpectedCode('pubkey', Date.now(), '12')).toThrow('Invalid prefix: 12. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle invalid prefix in generateCode', () => {
+            expect(() => CodeGenerator.generateCode('pubkey', '12')).toThrow('Invalid prefix: 12. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle negative timestamp in validateCode', () => {
+            const result = CodeGenerator.validateCode('12345678', 'pubkey', -1000, 'DEFAULT');
+            expect(result).toBe(false);
+        });
+
+        it('should handle future timestamp in validateCode', () => {
+            const futureTimestamp = Date.now() + 200000; // 200 seconds in future
+            const result = CodeGenerator.validateCode('12345678', 'pubkey', futureTimestamp, 'DEFAULT');
+            expect(result).toBe(false);
+        });
+
+        it('should handle expired timestamp in validateCode', () => {
+            const expiredTimestamp = Date.now() - 200000; // 200 seconds ago
+            const result = CodeGenerator.validateCode('12345678', 'pubkey', expiredTimestamp, 'DEFAULT');
+            expect(result).toBe(false);
+        });
+
+        it('should handle negative timestamp in isValidTimestamp', () => {
+            const result = CodeGenerator.isValidTimestamp(-1000);
+            expect(result).toBe(false);
+        });
+
+        it('should handle future timestamp beyond window in isValidTimestamp', () => {
+            const futureTimestamp = Date.now() + 200000; // 200 seconds in future
+            const result = CodeGenerator.isValidTimestamp(futureTimestamp);
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('Error cases and edge conditions', () => {
+        it('should throw error for invalid prefix in normalizePrefix', () => {
+            // Test line 44: throw new Error for invalid prefix
+            expect(() => CodeGenerator.normalizePrefix('123')).toThrow('Invalid prefix: 123. Must be 3-12 letters or "DEFAULT"');
+            expect(() => CodeGenerator.normalizePrefix('ab')).toThrow('Invalid prefix: ab. Must be 3-12 letters or "DEFAULT"');
+            expect(() => CodeGenerator.normalizePrefix('verylongprefix123')).toThrow('Invalid prefix: verylongprefix123. Must be 3-12 letters or "DEFAULT"');
+            expect(() => CodeGenerator.normalizePrefix('test123')).toThrow('Invalid prefix: test123. Must be 3-12 letters or "DEFAULT"');
+        });
+
+        it('should handle invalid timestamps in validateCode', () => {
+            const pubkey = 'test_pubkey';
+            const prefix = 'TEST';
+            
+            // Test line 74: timestamp validation failures
+            // Negative timestamp
+            expect(CodeGenerator.validateCode('12345678', pubkey, -1000, prefix)).toBe(false);
+            
+            // Future timestamp (should be invalid according to validateCode logic)
+            const futureTimestamp = Date.now() + 1000;
+            expect(CodeGenerator.validateCode('12345678', pubkey, futureTimestamp, prefix)).toBe(false);
+            
+            // Past timestamp within window (should be valid)
+            const pastTimestamp = Date.now() - 1000;
+            const validCode = CodeGenerator.getExpectedCode(pubkey, pastTimestamp, prefix);
+            expect(CodeGenerator.validateCode(validCode, pubkey, pastTimestamp, prefix)).toBe(true);
+        });
+
+        it('should handle code mismatch in validateCode', () => {
+            const pubkey = 'test_pubkey';
+            const timestamp = Date.now();
+            const prefix = 'TEST';
+            
+            // Test lines 94-111: code validation failures
+            const expectedCode = CodeGenerator.getExpectedCode(pubkey, timestamp, prefix);
+            
+            // Wrong code
+            expect(CodeGenerator.validateCode('99999999', pubkey, timestamp, prefix)).toBe(false);
+            
+            // Code with wrong length
+            expect(CodeGenerator.validateCode('1234567', pubkey, timestamp, prefix)).toBe(false);
+            expect(CodeGenerator.validateCode('123456789', pubkey, timestamp, prefix)).toBe(false);
+            
+            // Valid code should pass
+            expect(CodeGenerator.validateCode(expectedCode, pubkey, timestamp, prefix)).toBe(true);
+        });
+
+        it('should handle edge cases in timestamp validation', () => {
+            const pubkey = 'test_pubkey';
+            const prefix = 'TEST';
+            
+            // Test boundary conditions
+            const now = Date.now();
+            
+            // Timestamp exactly at now (should be valid)
+            const code1 = CodeGenerator.getExpectedCode(pubkey, now, prefix);
+            expect(CodeGenerator.validateCode(code1, pubkey, now, prefix)).toBe(true);
+            
+            // Past timestamp within window (should be valid)
+            const pastTimestamp = now - 1000;
+            const code2 = CodeGenerator.getExpectedCode(pubkey, pastTimestamp, prefix);
+            expect(CodeGenerator.validateCode(code2, pubkey, pastTimestamp, prefix)).toBe(true);
+            
+            // Future timestamp (should be invalid according to validateCode logic)
+            const futureTimestamp = now + 1000;
+            const code3 = CodeGenerator.getExpectedCode(pubkey, futureTimestamp, prefix);
+            expect(CodeGenerator.validateCode(code3, pubkey, futureTimestamp, prefix)).toBe(false);
+        });
     });
 
     describe('Integration Tests', () => {
@@ -320,8 +424,8 @@ describe('CodeGenerator', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
 
             pubkeys.forEach(pubkey => {
-                const { code } = CodeGenerator.generateCode(pubkey, testSignature, 'DEFAULT', timestamp);
-                const isValid = CodeGenerator.validateCode(code, pubkey, timestamp, testSignature, 'DEFAULT');
+                const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
+                const isValid = CodeGenerator.validateCode(code, pubkey, timestamp, 'DEFAULT');
 
                 expect(code).toHaveLength(8);
                 expect(/^\d{8}$/.test(code)).toBe(true);
@@ -336,21 +440,21 @@ describe('CodeGenerator', () => {
             // Test different public keys
             for (let i = 0; i < 10; i++) {
                 const pubkey = `${i}sbZg6E3HbMdzEDXUGvXTo7WTxEfNMPkRjJ3xCTpSFLW`;
-                const { code } = CodeGenerator.generateCode(pubkey, testSignature, 'DEFAULT', timestamp);
+                const { code } = CodeGenerator.generateCode(pubkey, 'DEFAULT', timestamp);
                 codes.add(code);
             }
 
             // Test different prefixes
             const prefixes = ['DEFAULT', 'CUSTOM', 'TEST', 'PROD'];
             prefixes.forEach(prefix => {
-                const { code } = CodeGenerator.generateCode(testPubkey, testSignature, prefix, timestamp);
+                const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
                 codes.add(code);
             });
 
             // Test different timestamps
             for (let i = 0; i < 5; i++) {
                 const slotTimestamp = timestamp + (i * CODE_TTL);
-                const { code } = CodeGenerator.generateCode(testPubkey, testSignature, 'DEFAULT', slotTimestamp);
+                const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', slotTimestamp);
                 codes.add(code);
             }
 

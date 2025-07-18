@@ -79,57 +79,11 @@ export class ActionCodesProtocol {
     }
 
     /**
-     * Generate an action code for a specific chain
-     * @param pubkey - User's public key
-     * @param signature - User's signature
-     * @param chain - Target chain
-     * @param prefix - Optional prefix (defaults to config defaultPrefix)
-     * @param timestamp - Optional timestamp (defaults to now)
-     * @returns ActionCode object
-     */
-    generateActionCode(
-        pubkey: string,
-        signature: string,
-        chain: SupportedChain,
-        prefix?: string,
-        timestamp?: number
-    ): ActionCode<string> {
-        if (!this.isChainSupported(chain)) {
-            throw new Error(`Chain '${chain}' is not supported. Registered chains: ${this.getRegisteredChains().join(', ')}`);
-        }
-
-        const normalizedPrefix = prefix || this.config.defaultPrefix;
-        const ts = timestamp || Date.now();
-
-        // Generate code using CodeGenerator
-        const { code, issuedAt, expiresAt } = CodeGenerator.generateCode(
-            pubkey,
-            signature,
-            normalizedPrefix,
-            ts
-        );
-
-        // Create ActionCode object
-        const actionCodeFields = {
-            code,
-            prefix: normalizedPrefix,
-            pubkey,
-            timestamp: issuedAt,
-            signature,
-            chain,
-            expiresAt,
-            status: 'pending' as ActionCodeStatus
-        };
-
-        return ActionCode.fromPayload(actionCodeFields);
-    }
-
-    /**
      * Validate an action code
      * @param actionCode - ActionCode to validate
      * @returns True if valid
      */
-    validateActionCode(actionCode: ActionCode<string>): boolean {
+    validateActionCode(actionCode: ActionCode): boolean {
         const chain = actionCode.chain;
 
         if (!this.isChainSupported(chain)) {
@@ -146,6 +100,58 @@ export class ActionCodesProtocol {
     }
 
     /**
+     * Create an action code
+     * @param pubkey - Wallet public key
+     * @param signFn - Chain-specific signing function (e.g.wallet.signMessage)
+     * @param chain - Target blockchain
+     * @param prefix - Optional code prefix
+     * @param timestamp - Optional timestamp
+     * @returns Promise resolving to a complete ActionCode object
+     */
+    async createActionCode(
+        pubkey: string,
+        signFn: (message: string) => Promise<string>,
+        chain: SupportedChain,
+        prefix: string = this.config.defaultPrefix,
+        timestamp?: number
+    ): Promise<ActionCode> {
+        if (!this.isChainSupported(chain)) {
+            throw new Error(`Chain '${chain}' is not supported. Registered chains: ${this.getRegisteredChains().join(', ')}`);
+        }
+
+        const adapter = this.getChainAdapter(chain);
+        if (!adapter) {
+            throw new Error(`No adapter found for chain '${chain}'`);
+        }
+
+        const ts = timestamp || Date.now();
+        const { code, issuedAt, expiresAt } = CodeGenerator.generateCode(pubkey, prefix, ts);
+        const message = adapter.getCodeSignatureMessage(code, issuedAt, prefix);
+        const signature = await signFn(message);
+
+        const actionCode = ActionCode.fromPayload({
+            code,
+            pubkey,
+            signature,
+            timestamp: issuedAt,
+            expiresAt,
+            prefix,
+            chain,
+            status: 'pending'
+        })
+
+        if (!this.validateActionCode(actionCode)) {
+            throw new Error('Invalid action code');
+        }
+
+        if (!adapter.verifyCodeSignature(actionCode)) {
+            throw new Error('Invalid signature for generated code');
+        }
+
+        return actionCode;
+    }
+
+    /**
      * Attach a transaction to an action code
      * @param actionCode - ActionCode to attach transaction to
      * @param transaction - Chain-specific transaction data
@@ -153,10 +159,10 @@ export class ActionCodesProtocol {
      * @returns Updated ActionCode
      */
     attachTransaction(
-        actionCode: ActionCode<string>,
+        actionCode: ActionCode,
         transaction: string,
         txType?: string
-    ): ActionCode<string> {
+    ): ActionCode {
         const chain = actionCode.chain;
 
         if (!this.isChainSupported(chain)) {
@@ -164,7 +170,7 @@ export class ActionCodesProtocol {
         }
 
         // Create transaction object
-        const txObject: ActionCodeTransaction<string> = {
+        const txObject: ActionCodeTransaction = {
             transaction,
             txType: txType || chain
         };
@@ -186,16 +192,16 @@ export class ActionCodesProtocol {
      * @returns Updated ActionCode
      */
     finalizeActionCode(
-        actionCode: ActionCode<string>,
+        actionCode: ActionCode,
         txSignature: string
-    ): ActionCode<string> {
+    ): ActionCode {
         const currentTransaction = actionCode.transaction;
         if (!currentTransaction) {
             throw new Error('Cannot finalize ActionCode without attached transaction');
         }
 
         // Update transaction with signature
-        const updatedTransaction: ActionCodeTransaction<string> = {
+        const updatedTransaction: ActionCodeTransaction = {
             ...currentTransaction,
             txSignature
         };
@@ -218,7 +224,7 @@ export class ActionCodesProtocol {
      * @returns ProtocolMetaV1 object
      */
     createProtocolMeta(
-        actionCode: ActionCode<string>,
+        actionCode: ActionCode,
         issuer?: string,
         params?: string
     ): ProtocolMetaV1 {

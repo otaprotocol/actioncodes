@@ -2,11 +2,15 @@ import {
     Transaction,
     TransactionInstruction,
     VersionedTransaction,
-    MessageV0
+    MessageV0,
+    PublicKey
 } from '@solana/web3.js';
 import { createMemoInstruction, MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import { ProtocolMetaV1, ProtocolMetaParser } from '../../meta';
 import { BaseChainAdapter } from '../base';
+import * as nacl from 'tweetnacl';
+import { ActionCode } from '../../actioncode';
+import { Buffer } from "buffer";
 
 /**
  * Solana transaction type union
@@ -175,7 +179,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
     protected validateTransactionIntegrity(tx: SolanaTransaction, meta: ProtocolMetaV1): boolean {
         // Additional Solana-specific validation can be added here
         // For example, checking transaction signatures, recent blockhash, etc.
-        
+
         // Verify that the memo instruction contains the expected protocol meta
         const decodedMeta = this.decode(tx);
         if (!decodedMeta) {
@@ -200,7 +204,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
      */
     decodeFromBase64(base64String: string): ProtocolMetaV1 | null {
         try {
-            const buffer = Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
+            const buffer = Buffer.from(base64String, 'base64');
             // Try legacy first, then versioned
             try {
                 const transaction = Transaction.from(buffer);
@@ -223,7 +227,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
      */
     validateFromBase64(base64String: string, authorities: string[], expectedPrefix: string = 'DEFAULT'): boolean {
         try {
-            const buffer = Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
+            const buffer = Buffer.from(base64String, 'base64');
             // Try legacy first, then versioned
             try {
                 const transaction = Transaction.from(buffer);
@@ -233,6 +237,20 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
                 return this.validate(transaction, authorities, expectedPrefix);
             }
         } catch {
+            return false;
+        }
+    }
+
+
+    public verifyCodeSignature(actionCode: ActionCode): boolean {
+        try {
+            const message = this.getCodeSignatureMessage(actionCode.code, actionCode.timestamp, actionCode.prefix);
+            const messageBytes = new TextEncoder().encode(message);
+            const pubkeyBytes = new PublicKey(actionCode.pubkey).toBytes();
+            const sigBytes = Buffer.from(actionCode.signature, 'base64');
+
+            return nacl.sign.detached.verify(messageBytes, sigBytes, pubkeyBytes);
+        } catch (error) {
             return false;
         }
     }

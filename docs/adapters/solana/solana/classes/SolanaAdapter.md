@@ -6,7 +6,7 @@
 
 # Class: SolanaAdapter
 
-Defined in: [adapters/solana/solana.ts:20](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L20)
+Defined in: [adapters/solana/solana.ts:24](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L24)
 
 Simple Solana adapter for protocol meta operations
 Supports both legacy and versioned transactions
@@ -35,7 +35,7 @@ Supports both legacy and versioned transactions
 
 > `readonly` **chain**: `"solana"` = `'solana'`
 
-Defined in: [adapters/solana/solana.ts:23](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L23)
+Defined in: [adapters/solana/solana.ts:27](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L27)
 
 #### Overrides
 
@@ -47,7 +47,7 @@ Defined in: [adapters/solana/solana.ts:23](https://github.com/otaprotocol/action
 
 > **decode**(`tx`): `null` \| [`ProtocolMetaV1`](../../../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [adapters/solana/solana.ts:40](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L40)
+Defined in: [adapters/solana/solana.ts:44](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L44)
 
 Decode protocol meta from Solana transaction (legacy or versioned)
 
@@ -75,7 +75,7 @@ Decoded ProtocolMetaV1 or null if not found
 
 > **decodeFromBase64**(`base64String`): `null` \| [`ProtocolMetaV1`](../../../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [adapters/solana/solana.ts:201](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L201)
+Defined in: [adapters/solana/solana.ts:205](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L205)
 
 Decode protocol meta from base64 string (for backward compatibility)
 
@@ -99,7 +99,7 @@ Decoded ProtocolMetaV1 or null
 
 > **detectTampering**(`tx`, `authorities`, `expectedPrefix`): `boolean`
 
-Defined in: [adapters/base.ts:48](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L48)
+Defined in: [adapters/base.ts:50](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/base.ts#L50)
 
 Detect tampered transactions by cross-checking metadata
 
@@ -139,7 +139,7 @@ True if transaction is valid and not tampered
 
 > **encode**(`meta`): `TransactionInstruction`
 
-Defined in: [adapters/solana/solana.ts:30](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L30)
+Defined in: [adapters/solana/solana.ts:34](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L34)
 
 Encode protocol meta as a Solana memo instruction
 
@@ -163,11 +163,51 @@ TransactionInstruction for the memo
 
 ***
 
+### getCodeSignatureMessage()
+
+> **getCodeSignatureMessage**(`code`, `timestamp`, `prefix`): `string`
+
+Defined in: [adapters/base.ts:96](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/base.ts#L96)
+
+Get the code signature message
+
+#### Parameters
+
+##### code
+
+`string`
+
+The code to sign
+
+##### timestamp
+
+`number`
+
+The timestamp of the code
+
+##### prefix
+
+`string` = `PROTOCOL_CODE_PREFIX`
+
+The prefix of the code
+
+#### Returns
+
+`string`
+
+The code signature message
+
+#### Inherited from
+
+[`BaseChainAdapter`](../../../base/classes/BaseChainAdapter.md).[`getCodeSignatureMessage`](../../../base/classes/BaseChainAdapter.md#getcodesignaturemessage)
+
+***
+
 ### hasIssuerSignature()
 
 > **hasIssuerSignature**(`tx`, `issuer`): `boolean`
 
-Defined in: [adapters/solana/solana.ts:68](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L68)
+Defined in: [adapters/solana/solana.ts:72](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L72)
 
 Check if the issuer has signed the transaction
 
@@ -201,7 +241,7 @@ True if issuer has signed
 
 > **validate**(`tx`, `authorities`, `expectedPrefix`): `boolean`
 
-Defined in: [adapters/solana/solana.ts:58](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L58)
+Defined in: [adapters/solana/solana.ts:62](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L62)
 
 Validate transaction with protocol meta and authority list
 
@@ -241,7 +281,7 @@ True if transaction is valid
 
 > **validateFromBase64**(`base64String`, `authorities`, `expectedPrefix`): `boolean`
 
-Defined in: [adapters/solana/solana.ts:224](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L224)
+Defined in: [adapters/solana/solana.ts:228](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L228)
 
 Validate base64 transaction (for backward compatibility)
 
@@ -277,7 +317,7 @@ True if transaction is valid
 
 > `protected` **validateTransactionIntegrity**(`tx`, `meta`): `boolean`
 
-Defined in: [adapters/solana/solana.ts:175](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/solana/solana.ts#L175)
+Defined in: [adapters/solana/solana.ts:179](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L179)
 
 Validate Solana transaction integrity with additional checks
 
@@ -304,3 +344,33 @@ True if transaction integrity is valid
 #### Overrides
 
 [`BaseChainAdapter`](../../../base/classes/BaseChainAdapter.md).[`validateTransactionIntegrity`](../../../base/classes/BaseChainAdapter.md#validatetransactionintegrity)
+
+***
+
+### verifyCodeSignature()
+
+> **verifyCodeSignature**(`actionCode`): `boolean`
+
+Defined in: [adapters/solana/solana.ts:245](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/adapters/solana/solana.ts#L245)
+
+Verify the code signature
+This is specific to the chain and should be implemented by the concrete adapter
+It will be used to verify the code signature for the action code if the right wallet is used to sign the code
+
+#### Parameters
+
+##### actionCode
+
+[`ActionCode`](../../../../actioncode/classes/ActionCode.md)
+
+The action code to verify
+
+#### Returns
+
+`boolean`
+
+True if the code signature is valid
+
+#### Overrides
+
+[`BaseChainAdapter`](../../../base/classes/BaseChainAdapter.md).[`verifyCodeSignature`](../../../base/classes/BaseChainAdapter.md#verifycodesignature)

@@ -1,8 +1,43 @@
 import { ActionCodesProtocol } from '../../src/protocol';
-import { ActionCode, ActionCodeStatus } from '../../src/actioncode';
+import { ActionCode, ActionCodeStatus, ActionCodeFields } from '../../src/actioncode';
 import { ProtocolMetaV1 } from '../../src/meta';
 import { BaseChainAdapter } from '../../src/adapters/base';
 import { SolanaAdapter } from '../../src/adapters/solana';
+import { Keypair } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+import { CodeGenerator } from '../../src/codegen';
+import { Buffer } from "buffer";
+
+/**
+ * Helper function to create a real signature for testing
+ */
+function createRealSignature(keypair: Keypair, message: string): string {
+    const messageBytes = new TextEncoder().encode(message);
+    const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+    return Buffer.from(signatureBytes).toString('base64');
+}
+
+/**
+ * Helper function to generate a valid signature for an action code
+ */
+function generateValidSignature(
+    keypair: Keypair,
+    pubkey: string,
+    prefix: string = 'DEFAULT',
+    timestamp?: number,
+    solanaAdapter?: SolanaAdapter
+): string {
+    // Use the exact same timestamp logic as the protocol
+    const ts = timestamp || Date.now();
+    const { code, issuedAt } = CodeGenerator.generateCode(pubkey, prefix, ts);
+    
+    // Create the message that should be signed using the adapter
+    // Use issuedAt to match what the protocol uses
+    const adapter = solanaAdapter || new SolanaAdapter();
+    const message = adapter.getCodeSignatureMessage(code, issuedAt, prefix);
+    
+    return createRealSignature(keypair, message);
+}
 
 /**
  * Mock Relayer Implementation
@@ -21,8 +56,8 @@ interface RelayerConfig {
     authorityKey: string;
 }
 
-interface StoredActionCode<T> {
-    actionCode: ActionCode<T>;
+interface StoredActionCode {
+    actionCode: ActionCode;
     registeredAt: number;
     lastAccessed: number;
 }
@@ -37,7 +72,7 @@ interface AttachRequest {
     };
 }
 
-interface ResolveResponse<T> {
+interface ResolveResponse {
     code: string;
     expiry: number;
     walletAddress: string;
@@ -46,10 +81,10 @@ interface ResolveResponse<T> {
     metadata?: any;
 }
 
-class MockRelayer<T = string> {
+class MockRelayer {
     private protocol: ActionCodesProtocol;
     private config: RelayerConfig;
-    private storage: Map<string, StoredActionCode<T>> = new Map();
+    private storage: Map<string, StoredActionCode> = new Map();
     private adapters: Map<string, BaseChainAdapter<any>> = new Map();
 
     constructor(config: RelayerConfig) {
@@ -69,26 +104,32 @@ class MockRelayer<T = string> {
      * Register an action code with the relayer
      * This is the main entry point for accepting codes from API
      */
-    register(
+    async register(
         pubkey: string,
         signature: string,
         chain: string,
         prefix?: string,
         timestamp?: number
-    ): ActionCode<T> {
+    ): Promise<ActionCode> {
+        // Validate input parameters
+        if (!pubkey || pubkey.trim() === '') {
+            throw new Error('Public key cannot be empty');
+        }
+        if (!signature || signature.trim() === '') {
+            throw new Error('Signature cannot be empty');
+        }
+        if (!chain || chain.trim() === '') {
+            throw new Error('Chain cannot be empty');
+        }
+
         // Generate action code using protocol
-        const actionCode = this.protocol.generateActionCode(
+        const actionCode = await this.protocol.createActionCode(
             pubkey,
-            signature,
+            async () => signature,
             chain as any,
             prefix,
             timestamp
-        ) as ActionCode<T>;
-
-        // Validate the generated code
-        if (!actionCode.isValid) {
-            throw new Error('Generated action code is invalid');
-        }
+        );
 
         // Check if code is expired
         if (actionCode.expired) {
@@ -96,7 +137,7 @@ class MockRelayer<T = string> {
         }
 
         // Store the action code
-        const storedCode: StoredActionCode<T> = {
+        const storedCode: StoredActionCode = {
             actionCode,
             registeredAt: Date.now(),
             lastAccessed: Date.now()
@@ -111,7 +152,7 @@ class MockRelayer<T = string> {
     /**
      * Resolve an action code - returns code, expiry, and wallet address
      */
-    resolve(code: string): ResolveResponse<T> | null {
+    resolve(code: string): ResolveResponse | null {
         const storedCode = this.storage.get(code);
 
         if (!storedCode) {
@@ -129,7 +170,7 @@ class MockRelayer<T = string> {
             return null;
         }
 
-        const response: ResolveResponse<T> = {
+        const response: ResolveResponse = {
             code: storedCode.actionCode.code,
             expiry: storedCode.actionCode.json.expiresAt,
             walletAddress: storedCode.actionCode.pubkey,
@@ -145,7 +186,7 @@ class MockRelayer<T = string> {
     /**
      * Attach a transaction to an action code
      */
-    attach(request: AttachRequest): ActionCode<T> | null {
+    attach(request: AttachRequest): ActionCode | null {
         const storedCode = this.storage.get(request.code);
 
         if (!storedCode) {
@@ -167,21 +208,22 @@ class MockRelayer<T = string> {
 
         // Attach transaction using protocol
         const updatedCode = this.protocol.attachTransaction(
-            storedCode.actionCode as ActionCode<string>,
+            storedCode.actionCode as ActionCode,
             request.transaction,
             request.txType
-        ) as ActionCode<T>;
+        ) as ActionCode;
 
         // Update metadata if provided
         if (request.metadata) {
-            const updatedFields = {
+            // Ensure we have all required fields from the updated code
+            const updatedFields: ActionCodeFields = {
                 ...updatedCode.json,
                 metadata: request.metadata
             };
-            const codeWithMetadata = ActionCode.fromPayload(updatedFields) as ActionCode<T>;
+            const codeWithMetadata = ActionCode.fromPayload(updatedFields) as ActionCode;
 
             // Update storage
-            const updatedStoredCode: StoredActionCode<T> = {
+            const updatedStoredCode: StoredActionCode = {
                 actionCode: codeWithMetadata,
                 registeredAt: storedCode.registeredAt,
                 lastAccessed: Date.now()
@@ -193,7 +235,7 @@ class MockRelayer<T = string> {
         }
 
         // Update storage
-        const updatedStoredCode: StoredActionCode<T> = {
+        const updatedStoredCode: StoredActionCode = {
             actionCode: updatedCode,
             registeredAt: storedCode.registeredAt,
             lastAccessed: Date.now()
@@ -233,7 +275,7 @@ class MockRelayer<T = string> {
 
         // Create protocol meta
         const meta = this.protocol.createProtocolMeta(
-            storedCode.actionCode as ActionCode<string>,
+            storedCode.actionCode as ActionCode,
             this.config.authorityKey,
             storedCode.actionCode.metadata?.params ? JSON.stringify(storedCode.actionCode.metadata.params) : undefined
         );
@@ -266,7 +308,7 @@ class MockRelayer<T = string> {
     /**
      * Finalize an action code with user signature
      */
-    finalize(code: string, txSignature: string): ActionCode<T> | null {
+    finalize(code: string, txSignature: string): ActionCode | null {
         const storedCode = this.storage.get(code);
 
         if (!storedCode) {
@@ -287,10 +329,10 @@ class MockRelayer<T = string> {
         }
 
         // Finalize using protocol
-        const finalizedCode = this.protocol.finalizeActionCode(storedCode.actionCode as ActionCode<string>, txSignature) as ActionCode<T>;
+        const finalizedCode = this.protocol.finalizeActionCode(storedCode.actionCode as ActionCode, txSignature) as ActionCode;
 
         // Update storage
-        const updatedStoredCode: StoredActionCode<T> = {
+        const updatedStoredCode: StoredActionCode = {
             actionCode: finalizedCode,
             registeredAt: storedCode.registeredAt,
             lastAccessed: Date.now()
@@ -304,7 +346,7 @@ class MockRelayer<T = string> {
     /**
      * Get all stored codes (for testing/debugging)
      */
-    getAllCodes(): StoredActionCode<T>[] {
+    getAllCodes(): StoredActionCode[] {
         return Array.from(this.storage.values());
     }
 
@@ -353,12 +395,13 @@ class MockRelayer<T = string> {
 }
 
 describe('Mock Relayer Integration Tests', () => {
-    let relayer: MockRelayer<string>;
+    let relayer: MockRelayer;
     let protocol: ActionCodesProtocol;
-    let userKeypair: any; // Mock keypair
+    let userKeypair: Keypair;
     let authorityKey: string;
+    let solanaAdapter: SolanaAdapter;
 
-        beforeEach(() => {
+    beforeEach(() => {
         // Initialize relayer with configuration
         authorityKey = 'relayer_authority_key_123456789';
         relayer = new MockRelayer({
@@ -366,29 +409,26 @@ describe('Mock Relayer Integration Tests', () => {
         });
 
         // Register Solana adapter
-        const solanaAdapter = new SolanaAdapter();
+        solanaAdapter = new SolanaAdapter();
         relayer.registerAdapter(solanaAdapter);
 
         protocol = ActionCodesProtocol.create();
-        
-        // Mock user keypair
-        userKeypair = {
-            publicKey: {
-                toBase58: () => 'user_public_key_123456789'
-            }
-        };
+
+        // Generate real user keypair
+        userKeypair = Keypair.generate();
     });
 
     describe('🔄 Complete Relayer Workflow', () => {
-        it('should handle complete relayer workflow from register to finalize', () => {
+        it('should handle complete relayer workflow from register to finalize', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'user_signature_for_validation_123';
+            const timestamp = Date.now(); // Use exact same timestamp
+            const signature = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp, solanaAdapter);
             const chain = 'solana';
             const prefix = 'TEST';
 
             // 1. Register action code
             console.log('\n📝 Step 1: Registering action code...');
-            const registeredCode = relayer.register(pubkey, signature, chain, prefix);
+            const registeredCode = await relayer.register(pubkey, signature, chain, prefix, timestamp);
 
             expect(registeredCode.code).toHaveLength(8);
             expect(registeredCode.pubkey).toBe(pubkey);
@@ -463,44 +503,48 @@ describe('Mock Relayer Integration Tests', () => {
     });
 
     describe('🔐 Code Validation', () => {
-        it('should validate codes during registration', () => {
+        it('should validate codes during registration', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Valid registration
-            const code = relayer.register(pubkey, signature, chain);
-            expect(code.isValid).toBe(true);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
+            expect(code.isValid(relayer['protocol'])).toBe(true);
 
             // Invalid chain
-            expect(() => {
-                relayer.register(pubkey, signature, 'unsupported_chain');
-            }).toThrow("Chain 'unsupported_chain' is not supported. Registered chains: solana");
+            await expect(
+                relayer.register(pubkey, signature, 'unsupported_chain', 'DEFAULT', timestamp)
+            ).rejects.toThrow("Chain 'unsupported_chain' is not supported. Registered chains: solana");
         });
 
-                it('should handle expired codes', () => {
+        it('should handle expired codes', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', undefined, solanaAdapter);
             const chain = 'solana';
 
             // Create expired timestamp
             const expiredTimestamp = Date.now() - 200000; // 200 seconds ago
-            
-            expect(() => {
-                relayer.register(pubkey, signature, chain, 'DEFAULT', expiredTimestamp);
-            }).toThrow('Generated action code is invalid');
+
+            await expect(
+                relayer.register(pubkey, signature, chain, 'DEFAULT', expiredTimestamp)
+            ).rejects.toThrow('Invalid action code');
         });
     });
 
     describe('📦 Storage and Retrieval', () => {
-        it('should store and retrieve codes correctly', () => {
+        it('should store and retrieve codes correctly', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp1 = Date.now();
+            const timestamp2 = Date.now() + 1000; // Different timestamp for second code
+            const signature1 = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp1, solanaAdapter);
+            const signature2 = generateValidSignature(userKeypair, pubkey, 'DEMO', timestamp2, solanaAdapter);
             const chain = 'solana';
 
             // Register multiple codes
-            const code1 = relayer.register(pubkey, signature, chain, 'TEST');
-            const code2 = relayer.register(pubkey, signature, chain, 'DEMO');
+            const code1 = await relayer.register(pubkey, signature1, chain, 'TEST', timestamp1);
+            const code2 = await relayer.register(pubkey, signature2, chain, 'DEMO', timestamp2);
 
             // Verify storage
             const allCodes = relayer.getAllCodes();
@@ -525,13 +569,14 @@ describe('Mock Relayer Integration Tests', () => {
     });
 
     describe('🔗 Transaction Attachment', () => {
-        it('should attach transactions correctly', () => {
+        it('should attach transactions correctly', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Attach transaction
             const attachRequest: AttachRequest = {
@@ -553,13 +598,14 @@ describe('Mock Relayer Integration Tests', () => {
             expect(attachedCode!.metadata?.description).toBe('Token swap');
         });
 
-        it('should prevent double attachment', () => {
+        it('should prevent double attachment', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // First attachment
             const attachRequest1: AttachRequest = {
@@ -580,14 +626,17 @@ describe('Mock Relayer Integration Tests', () => {
     });
 
     describe('🧹 Cleanup and Maintenance', () => {
-        it('should clean up expired codes', () => {
+        it('should clean up expired codes', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp1 = Date.now();
+            const timestamp2 = Date.now() + 1000;
+            const signature1 = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp1, solanaAdapter);
+            const signature2 = generateValidSignature(userKeypair, pubkey, 'DEMO', timestamp2, solanaAdapter);
             const chain = 'solana';
 
             // Register codes
-            const code1 = relayer.register(pubkey, signature, chain, 'TEST');
-            const code2 = relayer.register(pubkey, signature, chain, 'DEMO');
+            const code1 = await relayer.register(pubkey, signature1, chain, 'TEST', timestamp1);
+            const code2 = await relayer.register(pubkey, signature2, chain, 'DEMO', timestamp2);
 
             // Verify initial state
             expect(relayer.getAllCodes()).toHaveLength(2);
@@ -598,12 +647,12 @@ describe('Mock Relayer Integration Tests', () => {
             if (expiredCode) {
                 // This is a hack for testing - in real implementation, codes expire naturally
                 // We need to create a new ActionCode with expired timestamp
-                const expiredFields = {
+                const expiredFields: ActionCodeFields = {
                     ...expiredCode.actionCode.json,
                     expiresAt: Date.now() - 1000 // Expired 1 second ago
                 };
                 const expiredActionCode = ActionCode.fromPayload(expiredFields);
-                expiredCode.actionCode = expiredActionCode as ActionCode<string>;
+                expiredCode.actionCode = expiredActionCode as ActionCode;
             }
 
             // Cleanup
@@ -612,14 +661,17 @@ describe('Mock Relayer Integration Tests', () => {
             expect(relayer.getAllCodes()).toHaveLength(1);
         });
 
-        it('should provide accurate statistics', () => {
+        it('should provide accurate statistics', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp1 = Date.now();
+            const timestamp2 = Date.now() + 1000;
+            const signature1 = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp1, solanaAdapter);
+            const signature2 = generateValidSignature(userKeypair, pubkey, 'DEMO', timestamp2, solanaAdapter);
             const chain = 'solana';
 
             // Register codes
-            const code1 = relayer.register(pubkey, signature, chain, 'TEST');
-            const code2 = relayer.register(pubkey, signature, chain, 'DEMO');
+            const code1 = await relayer.register(pubkey, signature1, chain, 'TEST', timestamp1);
+            const code2 = await relayer.register(pubkey, signature2, chain, 'DEMO', timestamp2);
 
             // Attach transaction to one
             relayer.attach({
@@ -641,22 +693,22 @@ describe('Mock Relayer Integration Tests', () => {
     });
 
     describe('⚠️ Error Handling', () => {
-        it('should handle invalid registration parameters', () => {
-            expect(() => {
-                relayer.register('', 'signature', 'solana');
-            }).toThrow();
+        it('should handle invalid registration parameters', async () => {
+            await expect(
+                relayer.register('', 'signature', 'solana', 'DEFAULT')
+            ).rejects.toThrow('Public key cannot be empty');
 
-            expect(() => {
-                relayer.register('pubkey', '', 'solana');
-            }).toThrow();
+            await expect(
+                relayer.register('pubkey', '', 'solana')
+            ).rejects.toThrow('Signature cannot be empty');
         });
 
-        it('should handle invalid resolve requests', () => {
+        it('should handle invalid resolve requests', async () => {
             const resolved = relayer.resolve('');
             expect(resolved).toBeNull();
         });
 
-        it('should handle invalid attach requests', () => {
+        it('should handle invalid attach requests', async () => {
             const attached = relayer.attach({
                 code: 'nonexistent',
                 transaction: 'transaction_data'
@@ -671,13 +723,14 @@ describe('Mock Relayer Integration Tests', () => {
     });
 
     describe('🔐 Relayer Security Scenarios', () => {
-        it('❌ Rejects attaching tx to finalized code', () => {
+        it('❌ Rejects attaching tx to finalized code', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Attach transaction and finalize
             relayer.attach({
@@ -696,25 +749,26 @@ describe('Mock Relayer Integration Tests', () => {
             expect(attached).toBeNull();
         });
 
-        it('❌ Rejects attaching tx to expired code', () => {
+        it('❌ Rejects attaching tx to expired code', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code normally first
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Manually expire the code by modifying the stored action code
             const storedCodes = relayer.getAllCodes();
             const storedCode = storedCodes.find(c => c.actionCode.code === code.code);
             if (storedCode) {
                 // Create an expired version of the action code
-                const expiredFields = {
+                const expiredFields: ActionCodeFields = {
                     ...storedCode.actionCode.json,
                     expiresAt: Date.now() - 1000 // Expired 1 second ago
                 };
                 const expiredActionCode = ActionCode.fromPayload(expiredFields);
-                storedCode.actionCode = expiredActionCode as ActionCode<string>;
+                storedCode.actionCode = expiredActionCode as ActionCode;
             }
 
             // Try to attach transaction to expired code
@@ -727,34 +781,37 @@ describe('Mock Relayer Integration Tests', () => {
             expect(attached).toBeNull();
         });
 
-        it('❌ Prevents re-registering same code twice', () => {
+        it('❌ Prevents re-registering same code twice', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature1 = 'valid_signature_1';
-            const signature2 = 'valid_signature_2';
+            const timestamp1 = Date.now();
+            const timestamp2 = Date.now() + 100; // 100ms later
+            const signature1 = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp1, solanaAdapter);
+            const signature2 = generateValidSignature(userKeypair, pubkey, 'TEST', timestamp2, solanaAdapter);
             const chain = 'solana';
 
             // Register code first time
-            const code1 = relayer.register(pubkey, signature1, chain, 'TEST');
+            const code1 = await relayer.register(pubkey, signature1, chain, 'TEST', timestamp1);
 
             // Try to register the same code again (same pubkey, different signature, same prefix)
-            const code2 = relayer.register(pubkey, signature2, chain, 'TEST');
+            const code2 = await relayer.register(pubkey, signature2, chain, 'TEST', timestamp2);
 
-            // Both should be valid but different codes (due to different signatures)
+            // Both should be valid but different codes (due to different timestamps)
             expect(code1.code).not.toBe(code2.code);
-            expect(code1.isValid).toBe(true);
-            expect(code2.isValid).toBe(true);
+            expect(code1.isValid(relayer['protocol'])).toBe(true);
+            expect(code2.isValid(relayer['protocol'])).toBe(true);
 
             // In a real implementation, you might want to prevent registering the same signature
             // multiple times within a short time window
         });
 
-        it('❌ Finalization only possible if tx was attached', () => {
+        it('❌ Finalization only possible if tx was attached', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Try to finalize without attaching transaction
             const finalized = relayer.finalize(code.code, 'tx_signature');
@@ -763,13 +820,14 @@ describe('Mock Relayer Integration Tests', () => {
             expect(finalized).toBeNull();
         });
 
-        it('✅ Allows finalization only after transaction is attached', () => {
+        it('✅ Allows finalization only after transaction is attached', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Attach transaction first
             const attached = relayer.attach({
@@ -800,25 +858,26 @@ describe('Mock Relayer Integration Tests', () => {
             expect(finalized).toBeNull();
         });
 
-        it('❌ Rejects resolving expired code', () => {
+        it('❌ Rejects resolving expired code', async () => {
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'valid_signature';
+            const timestamp = Date.now();
+            const signature = generateValidSignature(userKeypair, pubkey, 'DEFAULT', timestamp, solanaAdapter);
             const chain = 'solana';
 
             // Register code normally first
-            const code = relayer.register(pubkey, signature, chain);
+            const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Manually expire the code by modifying the stored action code
             const storedCodes = relayer.getAllCodes();
             const storedCode = storedCodes.find(c => c.actionCode.code === code.code);
             if (storedCode) {
                 // Create an expired version of the action code
-                const expiredFields = {
+                const expiredFields: ActionCodeFields = {
                     ...storedCode.actionCode.json,
                     expiresAt: Date.now() - 1000 // Expired 1 second ago
                 };
                 const expiredActionCode = ActionCode.fromPayload(expiredFields);
-                storedCode.actionCode = expiredActionCode as ActionCode<string>;
+                storedCode.actionCode = expiredActionCode as ActionCode;
             }
 
             // Try to resolve expired code

@@ -35,19 +35,17 @@ export class CodeGenerator {
     /**
      * Generate a deterministic 8-digit code based on public key, prefix, and timestamp
      * @param pubkey - Solana wallet public key (base58)
-     * @param signature - User's signature string
      * @param prefix - Optional namespace prefix (default: "DEFAULT")
      * @param timestamp - UNIX timestamp in milliseconds (defaults to now)
      * @returns Object containing code, issuedAt, and expiresAt timestamps
      */
     static generateCode(
         pubkey: string,
-        signature: string,
         prefix: string = "DEFAULT",
         timestamp: number = Date.now()
     ): { code: string; issuedAt: number; expiresAt: number } {
         const normalizedPrefix = this.normalizePrefix(prefix);
-        const input = `${normalizedPrefix}:${pubkey}:${timestamp}:${signature}`;
+        const input = `${normalizedPrefix}:${pubkey}:${timestamp}`;
         const hash = sha256(input);
 
         const raw = parseInt(hash.slice(0, 16), 16);
@@ -84,30 +82,18 @@ export class CodeGenerator {
     }
 
     /**
-     * Generate the message that should be signed for code verification
-     * @param code - The generated 8-digit code
-     * @param timestamp - UNIX timestamp in milliseconds
-     * @returns Message string in format "actioncodes:<code>:<timestamp>"
-     */
-    static generateCodeSignatureMessage(code: string, timestamp: number): string {
-        return `${PROTOCOL_PREFIX}:${code}:${timestamp}`;
-    }
-
-    /**
      * Get the expected code for a given public key and timestamp
      * @param pubkey - Solana wallet public key (base58)
      * @param timestamp - UNIX timestamp in milliseconds
-     * @param signature - User's signature string
      * @param prefix - Optional namespace prefix (default: "DEFAULT")
      * @returns 8-digit numeric string
      */
     static getExpectedCode(
         pubkey: string,
         timestamp: number,
-        signature: string,
         prefix: string = "DEFAULT"
     ): string {
-        return this.generateCode(pubkey, signature, prefix, timestamp).code;
+        return this.generateCode(pubkey, prefix, timestamp).code;
     }
 
     /**
@@ -115,7 +101,6 @@ export class CodeGenerator {
      * @param code - The code to validate
      * @param pubkey - Solana wallet public key (base58)
      * @param timestamp - UNIX timestamp in milliseconds
-     * @param signature - User's signature string
      * @param prefix - Optional namespace prefix (default: "DEFAULT")
      * @returns True if code matches expected code and timestamp is valid
      */
@@ -123,10 +108,9 @@ export class CodeGenerator {
         code: string,
         pubkey: string,
         timestamp: number,
-        signature: string,
         prefix: string = "DEFAULT"
     ): boolean {
-        const expectedCode = this.getExpectedCode(pubkey, timestamp, signature, prefix);
+        const expectedCode = this.getExpectedCode(pubkey, timestamp, prefix);
         const now = Date.now();
         const isTimeValid = timestamp >= 0 && timestamp <= now && now <= timestamp + this.TIME_WINDOW_MS;
         return code === expectedCode && isTimeValid;

@@ -3,6 +3,7 @@ import { createMemoInstruction, MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import { SolanaAdapter } from './solana';
 import { ProtocolMetaV1, ProtocolMetaParser } from '../../meta';
 import { PROTOCOL_PREFIX } from '../../constants';
+import { Buffer } from "buffer";
 
 describe('SolanaAdapter', () => {
   let adapter: SolanaAdapter;
@@ -62,7 +63,7 @@ describe('SolanaAdapter', () => {
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
         transaction.feePayer = authority1.publicKey;
         
-        const serialized = btoa(String.fromCharCode(...transaction.serialize({ requireAllSignatures: false })));
+        const serialized = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
         const result = adapter.decodeFromBase64(serialized);
         expect(result).toEqual(testMeta);
       });
@@ -148,7 +149,7 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const serialized = btoa(String.fromCharCode(...versionedTransaction.serialize()));
+        const serialized = Buffer.from(versionedTransaction.serialize()).toString('base64');
         const result = adapter.decodeFromBase64(serialized);
         expect(result).toEqual(testMeta);
       });
@@ -283,7 +284,7 @@ describe('SolanaAdapter', () => {
         transaction.feePayer = authority1.publicKey;
         transaction.sign(authority1);
         
-        const serialized = btoa(String.fromCharCode(...transaction.serialize({ requireAllSignatures: false })));
+        const serialized = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
         const result = adapter.validateFromBase64(serialized, mockAuthorities, 'DEFAULT');
         expect(result).toBe(true);
       });
@@ -425,7 +426,7 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const serialized = btoa(String.fromCharCode(...versionedTransaction.serialize()));
+        const serialized = Buffer.from(versionedTransaction.serialize()).toString('base64');
         const result = adapter.validateFromBase64(serialized, mockAuthorities, 'DEFAULT');
         expect(result).toBe(true);
       });
@@ -573,7 +574,7 @@ describe('SolanaAdapter', () => {
     });
 
     it('should return null for invalid transaction data', () => {
-      const invalidData = btoa('invalid-transaction-data');
+      const invalidData = Buffer.from('invalid-transaction-data', 'utf8').toString('base64');
       const result = adapter.decodeFromBase64(invalidData);
       expect(result).toBeNull();
     });
@@ -586,7 +587,7 @@ describe('SolanaAdapter', () => {
     });
 
     it('should return false for invalid transaction data', () => {
-      const invalidData = btoa('invalid-transaction-data');
+      const invalidData = Buffer.from('invalid-transaction-data', 'utf8').toString('base64');
       const result = adapter.validateFromBase64(invalidData, mockAuthorities, 'DEFAULT');
       expect(result).toBe(false);
     });
@@ -652,20 +653,79 @@ describe('SolanaAdapter', () => {
 
   describe('hasIssuerSignature edge cases', () => {
     it('should return false for transaction with neither message nor signatures', () => {
-      const invalidTransaction = {} as any;
-      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+      const adapter = new SolanaAdapter();
+      const transaction = {} as any;
+      const result = adapter.hasIssuerSignature(transaction, 'test_issuer');
       expect(result).toBe(false);
     });
 
     it('should return false for transaction with empty message', () => {
-      const invalidTransaction = { message: null } as any;
-      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+      const adapter = new SolanaAdapter();
+      const transaction = { message: null } as any;
+      const result = adapter.hasIssuerSignature(transaction, 'test_issuer');
       expect(result).toBe(false);
     });
 
-    it('should return false for transaction with non-array signatures', () => {
-      const invalidTransaction = { signatures: 'not-an-array' } as any;
-      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+    it('should return false for transaction with empty signatures array', () => {
+      const adapter = new SolanaAdapter();
+      const transaction = { signatures: [] } as any;
+      const result = adapter.hasIssuerSignature(transaction, 'test_issuer');
+      expect(result).toBe(false);
+    });
+
+    it('should return false for transaction with invalid structure', () => {
+      const adapter = new SolanaAdapter();
+      const transaction = { someOtherField: 'value' } as any;
+      const result = adapter.hasIssuerSignature(transaction, 'test_issuer');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('validateTransactionIntegrity edge cases', () => {
+    it('should return false when decode returns null', () => {
+      const adapter = new SolanaAdapter();
+      const transaction = new Transaction();
+      
+      // Mock decode to return null
+      jest.spyOn(adapter, 'decode').mockReturnValue(null);
+      
+      const meta: ProtocolMetaV1 = {
+        version: '1',
+        prefix: 'DEFAULT',
+        initiator: 'initiator',
+        id: 'id',
+        iss: 'authority1',
+        params: undefined
+      };
+      
+      const result = adapter['validateTransactionIntegrity'](transaction, meta);
+      expect(result).toBe(false);
+    });
+
+    it('should return false when decoded meta does not match provided meta', () => {
+      const adapter = new SolanaAdapter();
+      const transaction = new Transaction();
+      
+      // Mock decode to return different meta
+      jest.spyOn(adapter, 'decode').mockReturnValue({
+        version: '1',
+        prefix: 'DIFFERENT',
+        initiator: 'different_initiator',
+        id: 'different_id',
+        iss: 'different_authority',
+        params: undefined
+      });
+      
+      const meta: ProtocolMetaV1 = {
+        version: '1',
+        prefix: 'DEFAULT',
+        initiator: 'initiator',
+        id: 'id',
+        iss: 'authority1',
+        params: undefined
+      };
+      
+      const result = adapter['validateTransactionIntegrity'](transaction, meta);
       expect(result).toBe(false);
     });
   });

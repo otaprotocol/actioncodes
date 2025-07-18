@@ -6,7 +6,7 @@
 
 # Class: CodeGenerator
 
-Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L4)
+Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L4)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/b4bc0
 
 > `static` **CODE\_DIGITS**: `number` = `CODE_LENGTH`
 
-Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L6)
+Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L6)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/b4bc0
 
 > `static` **MAX\_PREFIX\_LENGTH**: `number`
 
-Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L8)
+Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L8)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/b4bc0
 
 > `static` **MIN\_PREFIX\_LENGTH**: `number`
 
-Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L7)
+Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L7)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/b4bc0
 
 > `static` **TIME\_WINDOW\_MS**: `number` = `CODE_TTL`
 
-Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L5)
+Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L5)
 
 ## Methods
 
@@ -56,7 +56,7 @@ Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/b4bc0
 
 > `static` **deriveCodeHash**(`pubkey`, `prefix`, `timestamp?`): `string`
 
-Defined in: [codegen.ts:74](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L74)
+Defined in: [codegen.ts:72](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L72)
 
 Derive the full SHA-256 hash for storage or encryption key generation
 
@@ -90,9 +90,9 @@ Full SHA-256 hash string
 
 ### generateCode()
 
-> `static` **generateCode**(`pubkey`, `signature`, `prefix`, `timestamp`): `object`
+> `static` **generateCode**(`pubkey`, `prefix`, `timestamp`): `object`
 
-Defined in: [codegen.ts:43](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L43)
+Defined in: [codegen.ts:42](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L42)
 
 Generate a deterministic 8-digit code based on public key, prefix, and timestamp
 
@@ -103,12 +103,6 @@ Generate a deterministic 8-digit code based on public key, prefix, and timestamp
 `string`
 
 Solana wallet public key (base58)
-
-##### signature
-
-`string`
-
-User's signature string
 
 ##### prefix
 
@@ -142,41 +136,11 @@ Object containing code, issuedAt, and expiresAt timestamps
 
 ***
 
-### generateCodeSignatureMessage()
-
-> `static` **generateCodeSignatureMessage**(`code`, `timestamp`): `string`
-
-Defined in: [codegen.ts:92](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L92)
-
-Generate the message that should be signed for code verification
-
-#### Parameters
-
-##### code
-
-`string`
-
-The generated 8-digit code
-
-##### timestamp
-
-`number`
-
-UNIX timestamp in milliseconds
-
-#### Returns
-
-`string`
-
-Message string in format "actioncodes:<code>:<timestamp>"
-
-***
-
 ### getExpectedCode()
 
-> `static` **getExpectedCode**(`pubkey`, `timestamp`, `signature`, `prefix`): `string`
+> `static` **getExpectedCode**(`pubkey`, `timestamp`, `prefix`): `string`
 
-Defined in: [codegen.ts:104](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L104)
+Defined in: [codegen.ts:91](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L91)
 
 Get the expected code for a given public key and timestamp
 
@@ -193,12 +157,6 @@ Solana wallet public key (base58)
 `number`
 
 UNIX timestamp in milliseconds
-
-##### signature
-
-`string`
-
-User's signature string
 
 ##### prefix
 
@@ -218,7 +176,7 @@ Optional namespace prefix (default: "DEFAULT")
 
 > `static` **isValidTimestamp**(`timestamp`): `boolean`
 
-Defined in: [codegen.ts:140](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L140)
+Defined in: [codegen.ts:124](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L124)
 
 Check if a timestamp falls within a valid time window
 
@@ -242,7 +200,7 @@ True if timestamp is valid
 
 > `static` **normalizePrefix**(`prefix`): `string`
 
-Defined in: [codegen.ts:27](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L27)
+Defined in: [codegen.ts:27](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L27)
 
 Normalize prefix - convert "DEFAULT" to empty string, validate others
 
@@ -268,9 +226,9 @@ Error if prefix is invalid
 
 ### validateCode()
 
-> `static` **validateCode**(`code`, `pubkey`, `timestamp`, `signature`, `prefix`): `boolean`
+> `static` **validateCode**(`code`, `pubkey`, `timestamp`, `prefix`): `boolean`
 
-Defined in: [codegen.ts:122](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L122)
+Defined in: [codegen.ts:107](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L107)
 
 Validate if a code matches the expected code for a given public key and timestamp
 
@@ -294,12 +252,6 @@ Solana wallet public key (base58)
 
 UNIX timestamp in milliseconds
 
-##### signature
-
-`string`
-
-User's signature string
-
 ##### prefix
 
 `string` = `"DEFAULT"`
@@ -318,7 +270,7 @@ True if code matches expected code and timestamp is valid
 
 > `static` **validatePrefix**(`prefix`): `boolean`
 
-Defined in: [codegen.ts:15](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/codegen.ts#L15)
+Defined in: [codegen.ts:15](https://github.com/otaprotocol/actioncodes/blob/fa975e9d2d8d3ff72314243f62c7c4bd689877da/src/codegen.ts#L15)
 
 Validate prefix format
 

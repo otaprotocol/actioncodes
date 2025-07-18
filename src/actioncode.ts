@@ -1,5 +1,7 @@
 import { CodeGenerator } from "./codegen";
 import { SUPPORTED_CHAINS } from "./constants";
+import { ActionCodesProtocol } from "./protocol";
+import { Buffer } from "buffer";
 
 export type ActionCodeStatus = 'pending' | 'resolved' | 'finalized' | 'expired' | 'error';
 
@@ -8,55 +10,62 @@ export interface ActionCodeMetadata {
     params?: Record<string, any>;
 }
 
-export interface ActionCodeTransaction<T> {
-    transaction?: T; // T = string for Solana (base64)
+export interface ActionCodeTransaction {
+    transaction?: string; // T = string for Solana (base64)
     txSignature?: string; // Solana signature
     txType?: string; // Transaction type for categorization
 }
 
-export interface ActionCodeFields<T> {
+export interface ActionCodeFields {
     code: string;
     prefix: string;
     pubkey: string;
     timestamp: number;
     signature: string;
     chain: (typeof SUPPORTED_CHAINS)[number];
-    transaction?: ActionCodeTransaction<T>;
+    transaction?: ActionCodeTransaction;
     metadata?: ActionCodeMetadata;
     expiresAt: number;
     status: ActionCodeStatus;
 }
 
-export class ActionCode<T> {
-    constructor(private fields: ActionCodeFields<T>) { }
+export class ActionCode {
+    constructor(private fields: ActionCodeFields) { }
 
-    static fromPayload<T>(input: ActionCodeFields<T>): ActionCode<T> { // TODO: rename to fromFields
+    static fromPayload(input: ActionCodeFields): ActionCode { // TODO: rename to fromFields
         if (!input.code || !input.pubkey || !input.signature || !input.timestamp || !input.expiresAt || !input.chain || !input.status) {
             throw new Error("Missing required fields in ActionCode payload");
         }
         return new ActionCode(input);
     }
 
-    static fromEncoded<T>(encoded: string): ActionCode<T> { // TODO: rename to fromEncoded
-        const decoded = JSON.parse(atob(encoded));
+    static fromEncoded(encoded: string): ActionCode { // TODO: rename to fromEncoded
+        const decoded = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
         return ActionCode.fromPayload(decoded);
     }
 
     get encoded(): string {
-        return btoa(JSON.stringify(this.fields));
+        return Buffer.from(JSON.stringify(this.fields), 'utf8').toString('base64');
     }
 
-    get isValid(): boolean { // TODO: rename to isValid
-        return CodeGenerator.validateCode(
+    isValid(protocol: ActionCodesProtocol): boolean {
+        if (this.expired) return false;
+
+        const adapter = protocol.getChainAdapter(this.chain);
+        if (!adapter) throw new Error(`Chain adapter not found for chain ${this.chain}`);
+
+        const isSignatureValid = adapter.verifyCodeSignature(this);
+        const isCodeValid = CodeGenerator.validateCode(
             this.fields.code,
             this.fields.pubkey,
             this.fields.timestamp,
-            this.fields.signature,
             this.fields.prefix
         );
+
+        return isSignatureValid && isCodeValid;
     }
 
-    get json(): ActionCodeFields<T> {
+    get json(): ActionCodeFields {
         return this.fields;
     }
 
@@ -123,7 +132,7 @@ export class ActionCode<T> {
      * Get the transaction data (chain-specific)
      * @returns Transaction data or undefined
      */
-    get transaction(): ActionCodeTransaction<T> | undefined {
+    get transaction(): ActionCodeTransaction | undefined {
         return this.fields.transaction;
     }
 
@@ -131,7 +140,7 @@ export class ActionCode<T> {
      * Get metadata associated with this action code
      * @returns Metadata object or undefined
      */
-    get metadata(): ActionCodeFields<T>['metadata'] | undefined {
+    get metadata(): ActionCodeFields['metadata'] | undefined {
         return this.fields.metadata;
     }
 

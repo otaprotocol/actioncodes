@@ -3,6 +3,38 @@ import { SolanaAdapter } from '../../src/adapters/solana';
 import { ActionCode } from '../../src/actioncode';
 import { Transaction, Keypair, VersionedTransaction, MessageV0 } from '@solana/web3.js';
 import { MEMO_PROGRAM_ID } from '@solana/spl-memo';
+import * as nacl from 'tweetnacl';
+import { CodeGenerator } from '../../src/codegen';
+import { Buffer } from "buffer";
+
+/**
+ * Helper function to create a real signature for testing
+ */
+function createRealSignature(keypair: Keypair, message: string): string {
+    const messageBytes = new TextEncoder().encode(message);
+    const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+    return Buffer.from(signatureBytes).toString('base64');
+}
+
+/**
+ * Helper function to generate a valid signature for an action code
+ */
+function generateValidSignature(
+    keypair: Keypair,
+    pubkey: string,
+    prefix: string = 'DEFAULT',
+    timestamp?: number
+): { signature: string; code: string; timestamp: number } {
+    const ts = timestamp || Date.now();
+    const { code } = CodeGenerator.generateCode(pubkey, prefix, ts);
+    
+    // Create the message that should be signed using the adapter
+    const solanaAdapter = new SolanaAdapter();
+    const message = solanaAdapter.getCodeSignatureMessage(code, ts, prefix);
+    
+    const signature = createRealSignature(keypair, message);
+    return { signature, code, timestamp: ts };
+}
 
 describe('Solana Integration Tests - Real Protocol Usage', () => {
     let protocol: ActionCodesProtocol;
@@ -24,11 +56,11 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
     });
 
     describe('✅ Complete Protocol Workflow', () => {
-        it('should handle complete action code lifecycle', () => {
+        it('should handle complete action code lifecycle', async () => {
             // 1. Generate action code
             const pubkey = userKeypair.publicKey.toBase58();
-            const signature = 'user_signature_for_validation';
-            const actionCode = protocol.generateActionCode(pubkey, signature, 'solana', 'TEST');
+            const { signature, code, timestamp } = generateValidSignature(userKeypair, pubkey, 'TEST');
+            const actionCode = await protocol.createActionCode(pubkey, async () => signature, 'solana', 'TEST', timestamp);
 
             // Verify action code properties
             expect(actionCode.code).toHaveLength(8);
@@ -39,7 +71,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             expect(actionCode.expired).toBe(false);
 
             // 2. Validate action code
-            const isValid = protocol.validateActionCode(actionCode);
+            const isValid = actionCode.isValid(protocol);
             expect(isValid).toBe(true);
 
             // 3. Create protocol meta
@@ -92,13 +124,15 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
     });
 
     describe('🔐 Protocol Meta Validation', () => {
-        it('should validate protocol meta in transactions', () => {
+        it('should validate protocol meta in transactions', async () => {
             // Generate action code
-            const actionCode = protocol.generateActionCode(
+            const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'DEFAULT');
+            const actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                'signature',
+                async () => signature,
                 'solana',
-                'DEFAULT'
+                'DEFAULT',
+                timestamp
             );
 
             // Create protocol meta
@@ -122,13 +156,15 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             expect(isInvalid).toBe(false);
         });
 
-        it('should handle versioned transactions', () => {
+        it('should handle versioned transactions', async () => {
             // Generate action code
-            const actionCode = protocol.generateActionCode(
+            const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'DEFAULT');
+            const actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                'signature',
+                async () => signature,
                 'solana',
-                'DEFAULT'
+                'DEFAULT',
+                timestamp
             );
 
             // Create protocol meta
@@ -164,17 +200,20 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
     });
 
     describe('⚠️ Error Handling', () => {
-        it('should handle unsupported chains', () => {
-            expect(() => {
-                protocol.generateActionCode('pubkey', 'signature', 'unsupported' as any);
-            }).toThrow('Chain \'unsupported\' is not supported');
+        it('should handle unsupported chains', async () => {
+            await expect(
+                protocol.createActionCode('pubkey', async () => 'signature', 'unsupported' as any)
+            ).rejects.toThrow('Chain \'unsupported\' is not supported');
         });
 
-        it('should handle invalid transactions', () => {
-            const actionCode = protocol.generateActionCode(
+        it('should handle invalid transactions', async () => {
+            const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'DEFAULT');
+            const actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                'signature',
-                'solana'
+                async () => signature,
+                'solana',
+                'DEFAULT',
+                timestamp
             );
 
             // Try to finalize without transaction
@@ -183,10 +222,10 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             }).toThrow('Cannot finalize ActionCode without attached transaction');
         });
 
-        it('should handle expired action codes', () => {
+        it('should handle expired action codes', async () => {
             // Create expired action code
             const expiredTimestamp = Date.now() - 200000; // 200 seconds ago
-            const actionCode = ActionCode.fromPayload<string>({
+            const actionCode = ActionCode.fromPayload({
                 code: '12345678',
                 prefix: 'DEFAULT',
                 pubkey: userKeypair.publicKey.toBase58(),
@@ -203,13 +242,15 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
     });
 
     describe('🔄 Round-trip Operations', () => {
-        it('should maintain data integrity through encode/decode cycle', () => {
+        it('should maintain data integrity through encode/decode cycle', async () => {
             // Generate action code
-            const actionCode = protocol.generateActionCode(
+            const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'CUSTOM');
+            const actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                'signature',
+                async () => signature,
                 'solana',
-                'CUSTOM'
+                'CUSTOM',
+                timestamp
             );
 
             // Create protocol meta
@@ -236,12 +277,15 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             expect(decoded).toEqual(originalMeta);
         });
 
-        it('should handle base64 transaction serialization', () => {
+        it('should handle base64 transaction serialization', async () => {
             // Generate action code
-            const actionCode = protocol.generateActionCode(
+            const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'DEFAULT');
+            const actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
-                'signature',
-                'solana'
+                async () => signature,
+                'solana',
+                'DEFAULT',
+                timestamp
             );
 
             // Create protocol meta
