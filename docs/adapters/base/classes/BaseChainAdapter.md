@@ -6,7 +6,7 @@
 
 # Class: `abstract` BaseChainAdapter\<T\>
 
-Defined in: adapters/base.ts:7
+Defined in: [adapters/base.ts:7](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L7)
 
 Base adapter class for chain-specific protocol meta operations
 
@@ -38,7 +38,7 @@ Chain-specific transaction type
 
 > `abstract` `readonly` **chain**: `string`
 
-Defined in: adapters/base.ts:8
+Defined in: [adapters/base.ts:8](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L8)
 
 ## Methods
 
@@ -46,7 +46,7 @@ Defined in: adapters/base.ts:8
 
 > `abstract` **decode**(`tx`): `null` \| [`ProtocolMetaV1`](../../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: adapters/base.ts:22
+Defined in: [adapters/base.ts:22](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L22)
 
 Decode protocol meta from chain-specific transaction
 
@@ -70,7 +70,7 @@ Decoded ProtocolMetaV1 or null
 
 > **detectTampering**(`tx`, `authorities`, `expectedPrefix`): `boolean`
 
-Defined in: adapters/base.ts:48
+Defined in: [adapters/base.ts:48](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L48)
 
 Detect tampered transactions by cross-checking metadata
 
@@ -106,7 +106,7 @@ True if transaction is valid and not tampered
 
 > `abstract` **encode**(`meta`): `any`
 
-Defined in: adapters/base.ts:15
+Defined in: [adapters/base.ts:15](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L15)
 
 Encode protocol meta for this chain
 
@@ -130,7 +130,7 @@ Chain-specific encoded data
 
 > `abstract` **hasIssuerSignature**(`tx`, `issuer`): `boolean`
 
-Defined in: adapters/base.ts:39
+Defined in: [adapters/base.ts:39](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L39)
 
 Check if the issuer has signed the transaction
 
@@ -160,7 +160,7 @@ True if issuer has signed
 
 > `abstract` **validate**(`tx`, `authorities`, `expectedPrefix?`): `boolean`
 
-Defined in: adapters/base.ts:31
+Defined in: [adapters/base.ts:31](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L31)
 
 Validate transaction with protocol meta and authority list
 
@@ -196,7 +196,7 @@ True if transaction is valid
 
 > `abstract` `protected` **validateTransactionIntegrity**(`tx`, `meta`): `boolean`
 
-Defined in: adapters/base.ts:85
+Defined in: [adapters/base.ts:85](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/adapters/base.ts#L85)
 
 Chain-specific transaction integrity validation
 Override this method for additional validation logic

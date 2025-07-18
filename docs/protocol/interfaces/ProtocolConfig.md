@@ -6,7 +6,7 @@
 
 # Interface: ProtocolConfig
 
-Defined in: protocol.ts:10
+Defined in: [protocol.ts:10](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L10)
 
 OTA Protocol Configuration
 
@@ -16,7 +16,7 @@ OTA Protocol Configuration
 
 > **codeLength**: `number`
 
-Defined in: protocol.ts:18
+Defined in: [protocol.ts:18](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L18)
 
 Code length in digits
 
@@ -26,7 +26,7 @@ Code length in digits
 
 > **codeTTL**: `number`
 
-Defined in: protocol.ts:16
+Defined in: [protocol.ts:16](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L16)
 
 Code TTL in milliseconds
 
@@ -36,7 +36,7 @@ Code TTL in milliseconds
 
 > **defaultPrefix**: `string`
 
-Defined in: protocol.ts:14
+Defined in: [protocol.ts:14](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L14)
 
 Default prefix for action codes
 
@@ -46,7 +46,7 @@ Default prefix for action codes
 
 > **maxPrefixLength**: `number`
 
-Defined in: protocol.ts:20
+Defined in: [protocol.ts:20](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L20)
 
 Maximum prefix length
 
@@ -56,7 +56,7 @@ Maximum prefix length
 
 > **minPrefixLength**: `number`
 
-Defined in: protocol.ts:22
+Defined in: [protocol.ts:22](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L22)
 
 Minimum prefix length
 
@@ -66,6 +66,6 @@ Minimum prefix length
 
 > **version**: `string`
 
-Defined in: protocol.ts:12
+Defined in: [protocol.ts:12](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/protocol.ts#L12)
 
 Protocol version

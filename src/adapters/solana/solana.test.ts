@@ -180,6 +180,84 @@ describe('SolanaAdapter', () => {
         const result = adapter.decode(mockTransaction);
         expect(result).toBeNull();
       });
+
+      it('should return null for versioned transaction with empty memo data', () => {
+        const messageV0 = new MessageV0({
+          header: {
+            numRequiredSignatures: 1,
+            numReadonlySignedAccounts: 0,
+            numReadonlyUnsignedAccounts: 1,
+          },
+          staticAccountKeys: [
+            authority1.publicKey,
+            MEMO_PROGRAM_ID,
+          ],
+          recentBlockhash: '11111111111111111111111111111111',
+          compiledInstructions: [{
+            programIdIndex: 1,
+            accountKeyIndexes: [],
+            data: new Uint8Array(0), // Empty data
+          }],
+          addressTableLookups: [],
+        });
+
+        const versionedTransaction = new VersionedTransaction(messageV0);
+        const result = adapter.decode(versionedTransaction);
+        expect(result).toBeNull();
+      });
+
+      it('should return null for versioned transaction with invalid memo data', () => {
+        const messageV0 = new MessageV0({
+          header: {
+            numRequiredSignatures: 1,
+            numReadonlySignedAccounts: 0,
+            numReadonlyUnsignedAccounts: 1,
+          },
+          staticAccountKeys: [
+            authority1.publicKey,
+            MEMO_PROGRAM_ID,
+          ],
+          recentBlockhash: '11111111111111111111111111111111',
+          compiledInstructions: [{
+            programIdIndex: 1,
+            accountKeyIndexes: [],
+            data: new Uint8Array([255, 255, 255]), // Invalid UTF-8 data
+          }],
+          addressTableLookups: [],
+        });
+
+        const versionedTransaction = new VersionedTransaction(messageV0);
+        const result = adapter.decode(versionedTransaction);
+        expect(result).toBeNull();
+      });
+
+      it('should return null for versioned transaction with unsupported protocol version', () => {
+        const metaString = `${PROTOCOL_PREFIX}:v=2&pre=DEFAULT&ini=ABC123&id=def456&iss=${defaultIssuer}`;
+        const memoInstruction = createMemoInstruction(metaString);
+        
+        const messageV0 = new MessageV0({
+          header: {
+            numRequiredSignatures: 1,
+            numReadonlySignedAccounts: 0,
+            numReadonlyUnsignedAccounts: 1,
+          },
+          staticAccountKeys: [
+            authority1.publicKey,
+            memoInstruction.programId,
+          ],
+          recentBlockhash: '11111111111111111111111111111111',
+          compiledInstructions: [{
+            programIdIndex: 1,
+            accountKeyIndexes: [],
+            data: memoInstruction.data,
+          }],
+          addressTableLookups: [],
+        });
+
+        const versionedTransaction = new VersionedTransaction(messageV0);
+        const result = adapter.decode(versionedTransaction);
+        expect(result).toBeNull();
+      });
     });
   });
 
@@ -408,6 +486,187 @@ describe('SolanaAdapter', () => {
         const result = adapter.validate(versionedTransaction, mockAuthorities, 'DEFAULT');
         expect(result).toBe(false);
       });
+    });
+  });
+
+  describe('hasIssuerSignature', () => {
+    describe('legacy transactions', () => {
+      it('should return true when issuer has signed', () => {
+        const transaction = new Transaction();
+        transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
+        transaction.sign(authority1);
+        
+        const result = adapter.hasIssuerSignature(transaction, authority1.publicKey.toBase58());
+        expect(result).toBe(true);
+      });
+
+      it('should return false when issuer has not signed', () => {
+        const transaction = new Transaction();
+        transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
+        transaction.sign(authority1);
+        
+        const result = adapter.hasIssuerSignature(transaction, authority2.publicKey.toBase58());
+        expect(result).toBe(false);
+      });
+
+      it('should return false for invalid transaction format', () => {
+        const invalidTransaction = { invalid: 'format' } as any;
+        const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('versioned transactions', () => {
+      it('should return true when issuer is in static account keys', () => {
+        const messageV0 = new MessageV0({
+          header: {
+            numRequiredSignatures: 1,
+            numReadonlySignedAccounts: 0,
+            numReadonlyUnsignedAccounts: 1,
+          },
+          staticAccountKeys: [authority1.publicKey],
+          recentBlockhash: '11111111111111111111111111111111',
+          compiledInstructions: [],
+          addressTableLookups: [],
+        });
+
+        const versionedTransaction = new VersionedTransaction(messageV0);
+        const result = adapter.hasIssuerSignature(versionedTransaction, authority1.publicKey.toBase58());
+        expect(result).toBe(true);
+      });
+
+      it('should return false when issuer is not in static account keys', () => {
+        const messageV0 = new MessageV0({
+          header: {
+            numRequiredSignatures: 1,
+            numReadonlySignedAccounts: 0,
+            numReadonlyUnsignedAccounts: 1,
+          },
+          staticAccountKeys: [authority1.publicKey],
+          recentBlockhash: '11111111111111111111111111111111',
+          compiledInstructions: [],
+          addressTableLookups: [],
+        });
+
+        const versionedTransaction = new VersionedTransaction(messageV0);
+        const result = adapter.hasIssuerSignature(versionedTransaction, authority2.publicKey.toBase58());
+        expect(result).toBe(false);
+      });
+
+      it('should return false for unsupported message version', () => {
+        const mockTransaction = {
+          message: { version: 'unsupported' },
+        } as any;
+        
+        const result = adapter.hasIssuerSignature(mockTransaction, authority1.publicKey.toBase58());
+        expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe('decodeFromBase64', () => {
+    it('should return null for invalid base64 string', () => {
+      const result = adapter.decodeFromBase64('invalid-base64');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for invalid transaction data', () => {
+      const invalidData = btoa('invalid-transaction-data');
+      const result = adapter.decodeFromBase64(invalidData);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('validateFromBase64', () => {
+    it('should return false for invalid base64 string', () => {
+      const result = adapter.validateFromBase64('invalid-base64', mockAuthorities, 'DEFAULT');
+      expect(result).toBe(false);
+    });
+
+    it('should return false for invalid transaction data', () => {
+      const invalidData = btoa('invalid-transaction-data');
+      const result = adapter.validateFromBase64(invalidData, mockAuthorities, 'DEFAULT');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('validateTransactionIntegrity', () => {
+    it('should return false when decoded meta does not match provided meta', () => {
+      const metaString = ProtocolMetaParser.serialize(testMeta);
+      const memoInstruction = createMemoInstruction(metaString);
+      const transaction = new Transaction();
+      transaction.add(memoInstruction);
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      
+      // Create different meta for comparison
+      const differentMeta = { ...testMeta, prefix: 'DIFFERENT' };
+      
+      // Mock the decode method to return different meta
+      const originalDecode = adapter.decode.bind(adapter);
+      adapter.decode = jest.fn().mockReturnValue(differentMeta);
+      
+      const result = (adapter as any).validateTransactionIntegrity(transaction, testMeta);
+      expect(result).toBe(false);
+      
+      // Restore original method
+      adapter.decode = originalDecode;
+    });
+
+    it('should return false when decode returns null', () => {
+      const transaction = new Transaction();
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      
+      // Mock the decode method to return null
+      const originalDecode = adapter.decode.bind(adapter);
+      adapter.decode = jest.fn().mockReturnValue(null);
+      
+      const result = (adapter as any).validateTransactionIntegrity(transaction, testMeta);
+      expect(result).toBe(false);
+      
+      // Restore original method
+      adapter.decode = originalDecode;
+    });
+  });
+
+  describe('decode edge cases', () => {
+    it('should return null for transaction with neither message nor instructions', () => {
+      const invalidTransaction = {} as any;
+      const result = adapter.decode(invalidTransaction);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for transaction with empty message', () => {
+      const invalidTransaction = { message: null } as any;
+      const result = adapter.decode(invalidTransaction);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for transaction with non-array instructions', () => {
+      const invalidTransaction = { instructions: 'not-an-array' } as any;
+      const result = adapter.decode(invalidTransaction);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('hasIssuerSignature edge cases', () => {
+    it('should return false for transaction with neither message nor signatures', () => {
+      const invalidTransaction = {} as any;
+      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+      expect(result).toBe(false);
+    });
+
+    it('should return false for transaction with empty message', () => {
+      const invalidTransaction = { message: null } as any;
+      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+      expect(result).toBe(false);
+    });
+
+    it('should return false for transaction with non-array signatures', () => {
+      const invalidTransaction = { signatures: 'not-an-array' } as any;
+      const result = adapter.hasIssuerSignature(invalidTransaction, authority1.publicKey.toBase58());
+      expect(result).toBe(false);
     });
   });
 }); 

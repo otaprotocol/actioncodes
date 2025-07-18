@@ -6,7 +6,7 @@
 
 # Class: ActionCode\<T\>
 
-Defined in: actioncode.ts:30
+Defined in: [actioncode.ts:30](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L30)
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: actioncode.ts:30
 
 > **new ActionCode**\<`T`\>(`fields`): `ActionCode`\<`T`\>
 
-Defined in: actioncode.ts:31
+Defined in: [actioncode.ts:31](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L31)
 
 #### Parameters
 
@@ -40,7 +40,7 @@ Defined in: actioncode.ts:31
 
 > **get** **chain**(): `string`
 
-Defined in: actioncode.ts:86
+Defined in: [actioncode.ts:86](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L86)
 
 Get the target chain for this action code
 
@@ -58,7 +58,7 @@ Chain identifier (e.g., "solana", "evm")
 
 > **get** **code**(): `string`
 
-Defined in: actioncode.ts:102
+Defined in: [actioncode.ts:102](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L102)
 
 Get the action code string
 
@@ -70,13 +70,32 @@ The 8-character action code
 
 ***
 
+### codeHash
+
+#### Get Signature
+
+> **get** **codeHash**(): `string`
+
+Defined in: [actioncode.ts:208](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L208)
+
+Get the code hash for this action code
+it is also used in the protocol meta as the code id
+
+##### Returns
+
+`string`
+
+Code hash string
+
+***
+
 ### description
 
 #### Get Signature
 
 > **get** **description**(): `undefined` \| `string`
 
-Defined in: actioncode.ts:142
+Defined in: [actioncode.ts:142](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L142)
 
 Get a human-readable description of the action
 
@@ -94,7 +113,7 @@ Description string or undefined
 
 > **get** **displayString**(): `string`
 
-Defined in: actioncode.ts:174
+Defined in: [actioncode.ts:174](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L174)
 
 Get a human-readable display string for the action code
 
@@ -112,7 +131,7 @@ Formatted display string
 
 > **get** **encoded**(): `string`
 
-Defined in: actioncode.ts:45
+Defined in: [actioncode.ts:45](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L45)
 
 ##### Returns
 
@@ -126,7 +145,7 @@ Defined in: actioncode.ts:45
 
 > **get** **expired**(): `boolean`
 
-Defined in: actioncode.ts:78
+Defined in: [actioncode.ts:78](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L78)
 
 Check if the action code has expired
 
@@ -144,7 +163,7 @@ True if the code has expired
 
 > **get** **isValid**(): `boolean`
 
-Defined in: actioncode.ts:49
+Defined in: [actioncode.ts:49](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L49)
 
 ##### Returns
 
@@ -158,7 +177,7 @@ Defined in: actioncode.ts:49
 
 > **get** **json**(): [`ActionCodeFields`](../interfaces/ActionCodeFields.md)\<`T`\>
 
-Defined in: actioncode.ts:59
+Defined in: [actioncode.ts:59](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L59)
 
 ##### Returns
 
@@ -172,7 +191,7 @@ Defined in: actioncode.ts:59
 
 > **get** **metadata**(): `undefined` \| [`ActionCodeMetadata`](../interfaces/ActionCodeMetadata.md)
 
-Defined in: actioncode.ts:134
+Defined in: [actioncode.ts:134](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L134)
 
 Get metadata associated with this action code
 
@@ -190,7 +209,7 @@ Metadata object or undefined
 
 > **get** **params**(): `undefined` \| `Record`\<`string`, `any`\>
 
-Defined in: actioncode.ts:150
+Defined in: [actioncode.ts:150](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L150)
 
 Get parameters associated with this action
 
@@ -208,7 +227,7 @@ Parameters object or undefined
 
 > **get** **prefix**(): `string`
 
-Defined in: actioncode.ts:110
+Defined in: [actioncode.ts:110](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L110)
 
 Get the prefix used for this action code
 
@@ -226,7 +245,7 @@ Normalized prefix
 
 > **get** **pubkey**(): `string`
 
-Defined in: actioncode.ts:118
+Defined in: [actioncode.ts:118](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L118)
 
 Get the user's public key
 
@@ -244,7 +263,7 @@ User's public key
 
 > **get** **remainingTime**(): `number`
 
-Defined in: actioncode.ts:69
+Defined in: [actioncode.ts:69](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L69)
 
 Get remaining time in milliseconds until expiration
 
@@ -262,7 +281,7 @@ Remaining time in milliseconds, or 0 if expired
 
 > **get** **remainingTimeString**(): `string`
 
-Defined in: actioncode.ts:187
+Defined in: [actioncode.ts:187](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L187)
 
 Get a formatted time string showing remaining time
 
@@ -280,7 +299,7 @@ Human-readable time string (e.g., "1m 30s remaining")
 
 > **get** **signature**(): `string`
 
-Defined in: actioncode.ts:166
+Defined in: [actioncode.ts:166](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L166)
 
 Get the user's signature
 
@@ -298,7 +317,7 @@ User's signature string
 
 > **get** **status**(): [`ActionCodeStatus`](../type-aliases/ActionCodeStatus.md)
 
-Defined in: actioncode.ts:94
+Defined in: [actioncode.ts:94](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L94)
 
 Get the current status of the action code
 
@@ -316,7 +335,7 @@ Current status
 
 > **get** **timestamp**(): `number`
 
-Defined in: actioncode.ts:158
+Defined in: [actioncode.ts:158](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L158)
 
 Get the timestamp when the code was generated
 
@@ -334,7 +353,7 @@ Timestamp in milliseconds
 
 > **get** **transaction**(): `undefined` \| [`ActionCodeTransaction`](../interfaces/ActionCodeTransaction.md)\<`T`\>
 
-Defined in: actioncode.ts:126
+Defined in: [actioncode.ts:126](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L126)
 
 Get the transaction data (chain-specific)
 
@@ -350,7 +369,7 @@ Transaction data or undefined
 
 > `static` **fromEncoded**\<`T`\>(`encoded`): `ActionCode`\<`T`\>
 
-Defined in: actioncode.ts:40
+Defined in: [actioncode.ts:40](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L40)
 
 #### Type Parameters
 
@@ -374,7 +393,7 @@ Defined in: actioncode.ts:40
 
 > `static` **fromPayload**\<`T`\>(`input`): `ActionCode`\<`T`\>
 
-Defined in: actioncode.ts:33
+Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L33)
 
 #### Type Parameters
 

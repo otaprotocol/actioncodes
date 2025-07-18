@@ -308,5 +308,37 @@ describe('ActionCodesProtocol', () => {
             const result = protocol.validateTransaction({}, 'unsupported', []);
             expect(result).toBe(false);
         });
+
+        it('should return false for unsupported chain in detectTampering', () => {
+            const result = protocol.detectTampering({}, 'unsupported', []);
+            expect(result).toBe(false);
+        });
+
+        it('should return null for unsupported chain in decodeProtocolMetaTyped', () => {
+            const result = protocol.decodeProtocolMetaTyped({}, 'unsupported');
+            expect(result).toBeNull();
+        });
+
+        it('should return false for unsupported chain in validateTransactionTyped', () => {
+            const result = protocol.validateTransactionTyped({}, 'unsupported', []);
+            expect(result).toBe(false);
+        });
+
+        it('should throw error for unsupported chain in attachTransaction', () => {
+            const actionCode = ActionCode.fromPayload<string>({
+                code: '12345678',
+                prefix: 'DEFAULT',
+                pubkey: 'test-pubkey',
+                timestamp: Date.now(),
+                signature: 'test-signature',
+                chain: 'unsupported' as any,
+                expiresAt: Date.now() + 120000,
+                status: 'pending'
+            });
+
+            expect(() => {
+                protocol.attachTransaction(actionCode, 'transaction');
+            }).toThrow('Chain \'unsupported\' is not supported');
+        });
     });
 }); 

@@ -269,9 +269,10 @@ describe('ProtocolMeta', () => {
 
   describe('Edge cases', () => {
     it('should handle empty initiator', () => {
-      const result = ProtocolMetaParser.fromInitiator('', ISSUER);
+      const timestamp = 1640995200000; // Fixed timestamp for deterministic testing
+      const result = ProtocolMetaParser.fromInitiator('', ISSUER, 'DEFAULT', undefined, timestamp);
       expect(result.initiator).toBe('');
-      expect(result.id).toBe(CodeGenerator.deriveCodeHash('', 'DEFAULT'));
+      expect(result.id).toBe(CodeGenerator.deriveCodeHash('', 'DEFAULT', timestamp));
       expect(result.iss).toBe(ISSUER);
       expect(result.prefix).toBe('DEFAULT');
       expect(result.version).toBe('1');
@@ -296,9 +297,10 @@ describe('ProtocolMeta', () => {
 
     it('should handle special characters in initiator', () => {
       const specialInitiator = 'ABC@#$%^&*()_+{}|:"<>?[]\\;\',./';
-      const result = ProtocolMetaParser.fromInitiator(specialInitiator, ISSUER);
+      const timestamp = 1640995200000; // Fixed timestamp for deterministic testing
+      const result = ProtocolMetaParser.fromInitiator(specialInitiator, ISSUER, 'DEFAULT', undefined, timestamp);
       expect(result.initiator).toBe(specialInitiator);
-      expect(result.id).toBe(CodeGenerator.deriveCodeHash(specialInitiator, 'DEFAULT'));
+      expect(result.id).toBe(CodeGenerator.deriveCodeHash(specialInitiator, 'DEFAULT', timestamp));
       expect(result.iss).toBe(ISSUER);
     });
   });

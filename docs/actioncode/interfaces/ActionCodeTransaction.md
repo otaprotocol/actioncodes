@@ -6,7 +6,7 @@
 
 # Interface: ActionCodeTransaction\<T\>
 
-Defined in: actioncode.ts:11
+Defined in: [actioncode.ts:11](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L11)
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: actioncode.ts:11
 
 > `optional` **transaction**: `T`
 
-Defined in: actioncode.ts:12
+Defined in: [actioncode.ts:12](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L12)
 
 ***
 
@@ -28,7 +28,7 @@ Defined in: actioncode.ts:12
 
 > `optional` **txSignature**: `string`
 
-Defined in: actioncode.ts:13
+Defined in: [actioncode.ts:13](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L13)
 
 ***
 
@@ -36,4 +36,4 @@ Defined in: actioncode.ts:13
 
 > `optional` **txType**: `string`
 
-Defined in: actioncode.ts:14
+Defined in: [actioncode.ts:14](https://github.com/otaprotocol/actioncodes/blob/b4bc06f6d42b5f06660c6f068ac123b4cd9daff7/src/actioncode.ts#L14)

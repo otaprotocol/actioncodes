@@ -15,7 +15,14 @@ const config: Config = {
         '!src/**/*.test.{ts,tsx}',
     ],
     coverageDirectory: 'coverage',
-    coverageReporters: ['text', 'lcov', 'html'],
+    coverageReporters: ['text', 'lcov', 'clover', 'json'],
+    coveragePathIgnorePatterns: [
+        '/node_modules/',
+        '/tests/',
+        '/__mocks__/',
+        '/dist/',
+        'src/index.ts',
+    ]
 };
 
 export default config;

@@ -4,6 +4,8 @@
 
 # 🛡️ Action Codes Protocol
 
+![Coverage](https://img.shields.io/badge/coverage-99.25%25-brightgreen)
+
 **Action Codes Protocol** enables short-lived, cryptographically verifiable action codes that authorize blockchain transactions and intents without requiring live wallet sessions.
 
 This repository contains the canonical specifications, SDK modules, and chain adapter interfaces that implement the Action Codes Protocol.

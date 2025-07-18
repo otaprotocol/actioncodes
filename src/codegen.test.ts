@@ -171,6 +171,24 @@ describe('CodeGenerator', () => {
             expect(() => CodeGenerator.deriveCodeHash(testPubkey, 'AB', timestamp)).toThrow();
             expect(() => CodeGenerator.deriveCodeHash(testPubkey, 'VERYLONGPREFIX', timestamp)).toThrow();
         });
+
+        it('should use current time when no timestamp provided', () => {
+            const hash1 = CodeGenerator.deriveCodeHash(testPubkey, 'DEFAULT');
+            const hash2 = CodeGenerator.deriveCodeHash(testPubkey, 'DEFAULT');
+
+            // Hashes should be the same if generated within the same time slot
+            expect(hash1).toBe(hash2);
+            expect(hash1).toHaveLength(64);
+            expect(/^[a-f0-9]{64}$/.test(hash1)).toBe(true);
+        });
+
+        it('should return hash when timestamp is explicitly provided', () => {
+            const timestamp = 1640995200000;
+            const hash = CodeGenerator.deriveCodeHash(testPubkey, 'DEFAULT', timestamp);
+            
+            expect(hash).toHaveLength(64);
+            expect(/^[a-f0-9]{64}$/.test(hash)).toBe(true);
+        });
     });
 
     describe('generateCodeSignatureMessage', () => {
@@ -253,6 +271,42 @@ describe('CodeGenerator', () => {
             expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'AB')).toThrow();
             expect(() => CodeGenerator.validateCode(code, testPubkey, timestamp, testSignature, 'VERYLONGPREFIX')).toThrow();
         });
+    });
+
+    describe('isValidTimestamp', () => {
+      it('should return true for current timestamp', () => {
+        const now = Date.now();
+        const isValid = CodeGenerator.isValidTimestamp(now);
+        expect(isValid).toBe(true);
+      });
+
+      it('should return true for timestamp within time window', () => {
+        const future = Date.now() + CODE_TTL - 1000; // 1 second before expiry
+        const isValid = CodeGenerator.isValidTimestamp(future);
+        expect(isValid).toBe(true);
+      });
+
+      it('should return true for timestamp at time window boundary', () => {
+        const boundary = Date.now() + CODE_TTL;
+        const isValid = CodeGenerator.isValidTimestamp(boundary);
+        expect(isValid).toBe(true);
+      });
+
+      it('should return false for negative timestamp', () => {
+        const isValid = CodeGenerator.isValidTimestamp(-1000);
+        expect(isValid).toBe(false);
+      });
+
+      it('should return false for timestamp beyond time window', () => {
+        const beyond = Date.now() + CODE_TTL + 1000; // 1 second beyond expiry
+        const isValid = CodeGenerator.isValidTimestamp(beyond);
+        expect(isValid).toBe(false);
+      });
+
+      it('should return true for zero timestamp', () => {
+        const isValid = CodeGenerator.isValidTimestamp(0);
+        expect(isValid).toBe(true);
+      });
     });
 
     describe('Integration Tests', () => {
