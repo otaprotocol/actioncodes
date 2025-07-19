@@ -1,5 +1,5 @@
 import { sha256 } from "js-sha256";
-import { CODE_LENGTH, CODE_TTL, MAX_PREFIX_LENGTH, MIN_PREFIX_LENGTH, PROTOCOL_PREFIX } from "./constants";
+import { CODE_LENGTH, CODE_TTL, MAX_PREFIX_LENGTH, MIN_PREFIX_LENGTH } from "./constants";
 
 export class CodeGenerator {
     static TIME_WINDOW_MS = CODE_TTL;
@@ -16,6 +16,28 @@ export class CodeGenerator {
         if (prefix === "DEFAULT") return true;
         if (prefix.length < this.MIN_PREFIX_LENGTH || prefix.length > this.MAX_PREFIX_LENGTH) return false;
         return /^[A-Za-z]+$/.test(prefix);
+    }
+
+    /**
+     * Validate generated code format
+     * @param code - The code to validate
+     * @returns True if code is valid, false otherwise
+     */
+    static validateCodeFormat(code: string): boolean {
+        if (!code || typeof code !== 'string') return false;
+        if (code.length !== this.CODE_DIGITS) return false;
+        return /^\d+$/.test(code);
+    }
+
+    /**
+     * Validate that a code without prefix is exactly 8 digits and only numbers
+     * @param code - The code to validate
+     * @returns True if code is valid, false otherwise
+     */
+    static validateCodeDigits(code: string): boolean {
+        if (!code || typeof code !== 'string') return false;
+        if (code.length !== CODE_LENGTH) return false;
+        return /^[0-9]{8}$/.test(code);
     }
 
     /**
@@ -38,6 +60,7 @@ export class CodeGenerator {
      * @param prefix - Optional namespace prefix (default: "DEFAULT")
      * @param timestamp - UNIX timestamp in milliseconds (defaults to now)
      * @returns Object containing code, issuedAt, and expiresAt timestamps
+     * @throws Error if generated code is invalid
      */
     static generateCode(
         pubkey: string,
@@ -55,8 +78,19 @@ export class CodeGenerator {
         const issuedAt = timestamp;
         const expiresAt = issuedAt + this.TIME_WINDOW_MS;
 
+        const generatedCode = code.toString().padStart(this.CODE_DIGITS, "0");
+        
+        // Validate the generated code
+        if (!this.validateCodeFormat(generatedCode)) {
+            throw new Error(`Generated code validation failed: ${generatedCode}`);
+        }
+        
+        if (!this.validateCodeDigits(generatedCode)) {
+            throw new Error(`Generated code must be exactly 8 digits: ${generatedCode}`);
+        }
+
         return {
-            code: code.toString().padStart(this.CODE_DIGITS, "0"),
+            code: generatedCode,
             issuedAt,
             expiresAt
         };
@@ -110,6 +144,15 @@ export class CodeGenerator {
         timestamp: number,
         prefix: string = "DEFAULT"
     ): boolean {
+        // First validate the code format
+        if (!this.validateCodeFormat(code)) {
+            return false;
+        }
+        
+        if (!this.validateCodeDigits(code)) {
+            return false;
+        }
+        
         const expectedCode = this.getExpectedCode(pubkey, timestamp, prefix);
         const now = Date.now();
         const isTimeValid = timestamp >= 0 && timestamp <= now && now <= timestamp + this.TIME_WINDOW_MS;

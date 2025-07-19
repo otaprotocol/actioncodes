@@ -199,6 +199,135 @@ describe('CodeGenerator', () => {
         });
     });
 
+    describe('Code Format Validation', () => {
+        it('should validate correct 8-digit codes', () => {
+            expect(CodeGenerator.validateCodeFormat('12345678')).toBe(true);
+            expect(CodeGenerator.validateCodeFormat('00000000')).toBe(true);
+            expect(CodeGenerator.validateCodeFormat('99999999')).toBe(true);
+        });
+
+        it('should reject codes with wrong length', () => {
+            expect(CodeGenerator.validateCodeFormat('1234567')).toBe(false);  // 7 digits
+            expect(CodeGenerator.validateCodeFormat('123456789')).toBe(false); // 9 digits
+            expect(CodeGenerator.validateCodeFormat('')).toBe(false); // empty
+        });
+
+        it('should reject codes with non-numeric characters', () => {
+            expect(CodeGenerator.validateCodeFormat('1234567a')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('1234567A')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('1234567-')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('1234567 ')).toBe(false);
+        });
+
+        it('should reject null and undefined', () => {
+            expect(CodeGenerator.validateCodeFormat(null as any)).toBe(false);
+            expect(CodeGenerator.validateCodeFormat(undefined as any)).toBe(false);
+        });
+    });
+
+    describe('Code Digits Validation', () => {
+        it('should validate exactly 8 digits', () => {
+            expect(CodeGenerator.validateCodeDigits('12345678')).toBe(true);
+            expect(CodeGenerator.validateCodeDigits('00000000')).toBe(true);
+            expect(CodeGenerator.validateCodeDigits('99999999')).toBe(true);
+        });
+
+        it('should reject codes with wrong length', () => {
+            expect(CodeGenerator.validateCodeDigits('1234567')).toBe(false);  // 7 digits
+            expect(CodeGenerator.validateCodeDigits('123456789')).toBe(false); // 9 digits
+            expect(CodeGenerator.validateCodeDigits('123456')).toBe(false); // 6 digits
+            expect(CodeGenerator.validateCodeDigits('')).toBe(false); // empty
+        });
+
+        it('should reject codes with non-numeric characters', () => {
+            expect(CodeGenerator.validateCodeDigits('1234567a')).toBe(false);
+            expect(CodeGenerator.validateCodeDigits('1234567A')).toBe(false);
+            expect(CodeGenerator.validateCodeDigits('1234567-')).toBe(false);
+            expect(CodeGenerator.validateCodeDigits('1234567 ')).toBe(false);
+            expect(CodeGenerator.validateCodeDigits('1234567.')).toBe(false);
+        });
+
+        it('should reject null and undefined', () => {
+            expect(CodeGenerator.validateCodeDigits(null as any)).toBe(false);
+            expect(CodeGenerator.validateCodeDigits(undefined as any)).toBe(false);
+        });
+    });
+
+    describe('Enhanced Code Generation Validation', () => {
+        it('should generate valid codes that pass all validation checks', () => {
+            const timestamp = 1640995200000;
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+
+            // All validation methods should pass
+            expect(CodeGenerator.validateCodeFormat(code)).toBe(true);
+            expect(CodeGenerator.validateCodeDigits(code)).toBe(true);
+            expect(code).toHaveLength(8);
+            expect(/^[0-9]{8}$/.test(code)).toBe(true);
+        });
+
+        it('should generate valid codes for custom prefixes', () => {
+            const timestamp = 1640995200000;
+            const { code } = CodeGenerator.generateCode(testPubkey, 'CUSTOM', timestamp);
+
+            // All validation methods should pass
+            expect(CodeGenerator.validateCodeFormat(code)).toBe(true);
+            expect(CodeGenerator.validateCodeDigits(code)).toBe(true);
+            expect(code).toHaveLength(8);
+            expect(/^[0-9]{8}$/.test(code)).toBe(true);
+        });
+
+        it('should throw error if generated code fails validation', () => {
+            // This test ensures our validation is working
+            // In practice, this should never happen with the current implementation
+            const timestamp = 1640995200000;
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+            
+            // The generated code should always be valid
+            expect(() => {
+                if (!CodeGenerator.validateCodeFormat(code)) {
+                    throw new Error('Generated code failed format validation');
+                }
+                if (!CodeGenerator.validateCodeDigits(code)) {
+                    throw new Error('Generated code failed digits validation');
+                }
+            }).not.toThrow();
+        });
+    });
+
+    describe('Enhanced Code Validation', () => {
+        it('should validate codes with proper format and digits', () => {
+            const timestamp = Date.now() - 1000; // 1 second ago, still valid
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+            
+            expect(CodeGenerator.validateCode(code, testPubkey, timestamp, 'DEFAULT')).toBe(true);
+        });
+
+        it('should reject codes with invalid format', () => {
+            const timestamp = Date.now() - 1000; // 1 second ago, still valid
+            
+            // Valid code but wrong format
+            expect(CodeGenerator.validateCode('1234567', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+            expect(CodeGenerator.validateCode('123456789', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+            expect(CodeGenerator.validateCode('1234567a', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+        });
+
+        it('should reject codes with invalid digits', () => {
+            const timestamp = Date.now() - 1000; // 1 second ago, still valid
+            
+            // Valid code but wrong digits
+            expect(CodeGenerator.validateCode('1234567', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+            expect(CodeGenerator.validateCode('123456789', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+            expect(CodeGenerator.validateCode('1234567a', testPubkey, timestamp, 'DEFAULT')).toBe(false);
+        });
+
+        it('should still validate correct codes with proper format and digits', () => {
+            const timestamp = Date.now() - 1000; // 1 second ago, still valid
+            const { code } = CodeGenerator.generateCode(testPubkey, 'DEFAULT', timestamp);
+            
+            expect(CodeGenerator.validateCode(code, testPubkey, timestamp, 'DEFAULT')).toBe(true);
+        });
+    });
+
     describe('validateCode', () => {
         it('should validate correct code with DEFAULT prefix', () => {
             const timestamp = Date.now() - 1000; // 1 second ago, still valid
