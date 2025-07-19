@@ -3,7 +3,8 @@ import {
     TransactionInstruction,
     VersionedTransaction,
     MessageV0,
-    PublicKey
+    PublicKey,
+    Keypair
 } from '@solana/web3.js';
 import { createMemoInstruction, MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import { ProtocolMetaV1, ProtocolMetaParser } from '../../meta';
@@ -186,6 +187,14 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             return false;
         }
 
+        if (!meta.iss) {
+            return false;
+        }
+
+        if (!this.hasIssuerSignature(tx, meta.iss!)) {
+            return false;
+        }
+
         // Cross-check the decoded meta with the provided meta
         return (
             decodedMeta.version === meta.version &&
@@ -252,6 +261,49 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             return nacl.sign.detached.verify(messageBytes, sigBytes, pubkeyBytes);
         } catch (error) {
             return false;
+        }
+    }
+
+    /**
+     * Sign the transaction with the protocol key using a callback approach
+     * @param signCallback - Callback function that performs the actual signing
+     * @returns Promise that resolves to the signed transaction
+     */
+    async signWithProtocolKey(
+        actionCode: ActionCode,
+        key: Keypair
+    ): Promise<ActionCode> {
+        try {
+            if (!actionCode.transaction?.transaction) {
+                throw new Error('No transaction found');
+            }
+
+            const tx = Transaction.from(Buffer.from(actionCode.transaction.transaction, 'base64'));
+
+            tx.partialSign(key);
+
+            const meta = this.decode(tx);
+
+            if (!meta) {
+                throw new Error('Invalid transaction, protocol meta not found');
+            }
+
+            if (!this.validateTransactionIntegrity(tx, meta)) {
+                throw new Error('Invalid transaction, transaction integrity not valid');
+            }
+
+            const newActionCode = Object.assign({}, actionCode, {
+                transaction: {
+                    ...actionCode.transaction,
+                    transaction: Buffer.from(tx.serialize({
+                        requireAllSignatures: false
+                    })).toString('base64'),
+                }
+            });
+
+            return newActionCode;
+        } catch (error) {
+            throw new Error(`Failed to sign transaction with protocol key: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 } 

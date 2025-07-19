@@ -6,7 +6,7 @@
 
 # Class: ActionCode
 
-Defined in: [actioncode.ts:32](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L32)
+Defined in: [actioncode.ts:32](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L32)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [actioncode.ts:32](https://github.com/otaprotocol/actioncodes/blob/0
 
 > **new ActionCode**(`fields`): `ActionCode`
 
-Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L33)
+Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L33)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/0
 
 > **get** **chain**(): `string`
 
-Defined in: [actioncode.ts:95](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L95)
+Defined in: [actioncode.ts:95](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L95)
 
 Get the target chain for this action code
 
@@ -52,7 +52,7 @@ Chain identifier (e.g., "solana", "evm")
 
 > **get** **code**(): `string`
 
-Defined in: [actioncode.ts:111](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L111)
+Defined in: [actioncode.ts:111](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L111)
 
 Get the action code string
 
@@ -70,7 +70,7 @@ The 8-character action code
 
 > **get** **codeHash**(): `string`
 
-Defined in: [actioncode.ts:217](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L217)
+Defined in: [actioncode.ts:217](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L217)
 
 Get the code hash for this action code
 it is also used in the protocol meta as the code id
@@ -89,7 +89,7 @@ Code hash string
 
 > **get** **description**(): `undefined` \| `string`
 
-Defined in: [actioncode.ts:151](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L151)
+Defined in: [actioncode.ts:151](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L151)
 
 Get a human-readable description of the action
 
@@ -107,7 +107,7 @@ Description string or undefined
 
 > **get** **displayString**(): `string`
 
-Defined in: [actioncode.ts:183](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L183)
+Defined in: [actioncode.ts:183](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L183)
 
 Get a human-readable display string for the action code
 
@@ -125,7 +125,7 @@ Formatted display string
 
 > **get** **encoded**(): `string`
 
-Defined in: [actioncode.ts:47](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L47)
+Defined in: [actioncode.ts:47](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L47)
 
 ##### Returns
 
@@ -139,7 +139,7 @@ Defined in: [actioncode.ts:47](https://github.com/otaprotocol/actioncodes/blob/0
 
 > **get** **expired**(): `boolean`
 
-Defined in: [actioncode.ts:87](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L87)
+Defined in: [actioncode.ts:87](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L87)
 
 Check if the action code has expired
 
@@ -157,7 +157,7 @@ True if the code has expired
 
 > **get** **json**(): [`ActionCodeFields`](../interfaces/ActionCodeFields.md)
 
-Defined in: [actioncode.ts:68](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L68)
+Defined in: [actioncode.ts:68](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L68)
 
 ##### Returns
 
@@ -171,7 +171,7 @@ Defined in: [actioncode.ts:68](https://github.com/otaprotocol/actioncodes/blob/0
 
 > **get** **metadata**(): `undefined` \| [`ActionCodeMetadata`](../interfaces/ActionCodeMetadata.md)
 
-Defined in: [actioncode.ts:143](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L143)
+Defined in: [actioncode.ts:143](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L143)
 
 Get metadata associated with this action code
 
@@ -189,7 +189,7 @@ Metadata object or undefined
 
 > **get** **params**(): `undefined` \| `Record`\<`string`, `any`\>
 
-Defined in: [actioncode.ts:159](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L159)
+Defined in: [actioncode.ts:159](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L159)
 
 Get parameters associated with this action
 
@@ -207,7 +207,7 @@ Parameters object or undefined
 
 > **get** **prefix**(): `string`
 
-Defined in: [actioncode.ts:119](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L119)
+Defined in: [actioncode.ts:119](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L119)
 
 Get the prefix used for this action code
 
@@ -225,7 +225,7 @@ Normalized prefix
 
 > **get** **pubkey**(): `string`
 
-Defined in: [actioncode.ts:127](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L127)
+Defined in: [actioncode.ts:127](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L127)
 
 Get the user's public key
 
@@ -243,7 +243,7 @@ User's public key
 
 > **get** **remainingTime**(): `number`
 
-Defined in: [actioncode.ts:78](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L78)
+Defined in: [actioncode.ts:78](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L78)
 
 Get remaining time in milliseconds until expiration
 
@@ -261,7 +261,7 @@ Remaining time in milliseconds, or 0 if expired
 
 > **get** **remainingTimeString**(): `string`
 
-Defined in: [actioncode.ts:196](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L196)
+Defined in: [actioncode.ts:196](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L196)
 
 Get a formatted time string showing remaining time
 
@@ -279,7 +279,7 @@ Human-readable time string (e.g., "1m 30s remaining")
 
 > **get** **signature**(): `string`
 
-Defined in: [actioncode.ts:175](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L175)
+Defined in: [actioncode.ts:175](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L175)
 
 Get the user's signature
 
@@ -297,7 +297,7 @@ User's signature string
 
 > **get** **status**(): [`ActionCodeStatus`](../type-aliases/ActionCodeStatus.md)
 
-Defined in: [actioncode.ts:103](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L103)
+Defined in: [actioncode.ts:103](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L103)
 
 Get the current status of the action code
 
@@ -315,7 +315,7 @@ Current status
 
 > **get** **timestamp**(): `number`
 
-Defined in: [actioncode.ts:167](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L167)
+Defined in: [actioncode.ts:167](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L167)
 
 Get the timestamp when the code was generated
 
@@ -333,7 +333,7 @@ Timestamp in milliseconds
 
 > **get** **transaction**(): `undefined` \| [`ActionCodeTransaction`](../interfaces/ActionCodeTransaction.md)
 
-Defined in: [actioncode.ts:135](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L135)
+Defined in: [actioncode.ts:135](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L135)
 
 Get the transaction data (chain-specific)
 
@@ -349,7 +349,7 @@ Transaction data or undefined
 
 > **isValid**(`protocol`): `boolean`
 
-Defined in: [actioncode.ts:51](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L51)
+Defined in: [actioncode.ts:51](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L51)
 
 #### Parameters
 
@@ -367,7 +367,7 @@ Defined in: [actioncode.ts:51](https://github.com/otaprotocol/actioncodes/blob/0
 
 > `static` **fromEncoded**(`encoded`): `ActionCode`
 
-Defined in: [actioncode.ts:42](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L42)
+Defined in: [actioncode.ts:42](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L42)
 
 #### Parameters
 
@@ -385,7 +385,7 @@ Defined in: [actioncode.ts:42](https://github.com/otaprotocol/actioncodes/blob/0
 
 > `static` **fromPayload**(`input`): `ActionCode`
 
-Defined in: [actioncode.ts:35](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L35)
+Defined in: [actioncode.ts:35](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L35)
 
 #### Parameters
 

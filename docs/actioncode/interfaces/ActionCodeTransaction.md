@@ -6,7 +6,7 @@
 
 # Interface: ActionCodeTransaction
 
-Defined in: [actioncode.ts:13](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L13)
+Defined in: [actioncode.ts:13](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L13)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [actioncode.ts:13](https://github.com/otaprotocol/actioncodes/blob/0
 
 > `optional` **transaction**: `string`
 
-Defined in: [actioncode.ts:14](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L14)
+Defined in: [actioncode.ts:14](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L14)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [actioncode.ts:14](https://github.com/otaprotocol/actioncodes/blob/0
 
 > `optional` **txSignature**: `string`
 
-Defined in: [actioncode.ts:15](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L15)
+Defined in: [actioncode.ts:15](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L15)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [actioncode.ts:15](https://github.com/otaprotocol/actioncodes/blob/0
 
 > `optional` **txType**: `string`
 
-Defined in: [actioncode.ts:16](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/actioncode.ts#L16)
+Defined in: [actioncode.ts:16](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L16)

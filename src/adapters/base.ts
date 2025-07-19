@@ -105,4 +105,18 @@ export abstract class BaseChainAdapter<T = any> {
      * @returns True if the code signature is valid
      */
     abstract verifyCodeSignature(actionCode: ActionCode): boolean;
+
+    /**
+     * Sign the transaction with the protocol key using a callback approach
+     * This method should be implemented by each chain-specific adapter to handle
+     * the chain's specific signing mechanism asynchronously
+     * @param tx - Chain-specific transaction to sign
+     * @param protocolPrivateKey - Private key or Keypair object depending on the chain
+     * @param signCallback - Callback function that performs the actual signing
+     * @returns Promise that resolves to the signed transaction
+     */
+    abstract signWithProtocolKey(
+        actionCode: ActionCode,
+        key: any
+    ): Promise<ActionCode>;
 } 

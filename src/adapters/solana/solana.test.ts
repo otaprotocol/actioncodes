@@ -729,4 +729,208 @@ describe('SolanaAdapter', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('signWithProtocolKey', () => {
+    let actionCode: any;
+    let keypair: Keypair;
+    let transaction: Transaction;
+
+    beforeEach(() => {
+      keypair = Keypair.generate();
+      
+      // Create a valid transaction with protocol meta where issuer matches the keypair
+      const metaWithMatchingIssuer = {
+        ...testMeta,
+        iss: keypair.publicKey.toBase58()
+      };
+      const metaString = ProtocolMetaParser.serialize(metaWithMatchingIssuer);
+      const memoInstruction = createMemoInstruction(metaString);
+      transaction = new Transaction();
+      transaction.add(memoInstruction);
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      transaction.feePayer = keypair.publicKey;
+
+      // Create action code with transaction
+      actionCode = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: keypair.publicKey.toBase58(),
+        timestamp: Date.now(),
+        signature: 'test-signature',
+        chain: 'solana',
+        transaction: {
+          transaction: Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64')
+        },
+        expiresAt: Date.now() + 300000, // 5 minutes from now
+        status: 'pending' as const
+      };
+    });
+
+    it('should successfully sign a valid action code with protocol key', async () => {
+      const result = await adapter.signWithProtocolKey(actionCode, keypair);
+      
+      expect(result).toBeDefined();
+      expect(result.transaction).toBeDefined();
+      expect(result.transaction?.transaction).toBeDefined();
+      expect(result.transaction?.transaction).not.toBe(actionCode.transaction.transaction);
+      
+      // Verify the transaction was actually signed
+      const signedTx = Transaction.from(Buffer.from(result.transaction!.transaction!, 'base64'));
+      expect(signedTx.signatures.length).toBeGreaterThan(0);
+    });
+
+    it('should throw error when action code has no transaction', async () => {
+      const actionCodeWithoutTx = { ...actionCode, transaction: undefined };
+      
+      await expect(adapter.signWithProtocolKey(actionCodeWithoutTx, keypair))
+        .rejects.toThrow('No transaction found');
+    });
+
+    it('should throw error when action code transaction is missing transaction data', async () => {
+      const actionCodeWithInvalidTx = { 
+        ...actionCode, 
+        transaction: { transaction: undefined } 
+      };
+      
+      await expect(adapter.signWithProtocolKey(actionCodeWithInvalidTx, keypair))
+        .rejects.toThrow('No transaction found');
+    });
+
+    it('should throw error when transaction has no protocol meta', async () => {
+      // Create transaction without memo instruction
+      const txWithoutMeta = new Transaction();
+      txWithoutMeta.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      txWithoutMeta.feePayer = keypair.publicKey;
+      
+      const actionCodeWithoutMeta = {
+        ...actionCode,
+        transaction: {
+          transaction: Buffer.from(txWithoutMeta.serialize({ requireAllSignatures: false })).toString('base64')
+        }
+      };
+      
+      await expect(adapter.signWithProtocolKey(actionCodeWithoutMeta, keypair))
+        .rejects.toThrow('Invalid transaction, protocol meta not found');
+    });
+
+    it('should throw error when transaction integrity validation fails', async () => {
+      // Mock validateTransactionIntegrity to return false
+      jest.spyOn(adapter as any, 'validateTransactionIntegrity').mockReturnValue(false);
+      
+      await expect(adapter.signWithProtocolKey(actionCode, keypair))
+        .rejects.toThrow('Invalid transaction, transaction integrity not valid');
+      
+      // Restore original method
+      jest.restoreAllMocks();
+    });
+
+    it('should preserve all action code fields except transaction', async () => {
+      const result = await adapter.signWithProtocolKey(actionCode, keypair);
+      
+      // Check that all original fields are preserved
+      expect(result.code).toBe(actionCode.code);
+      expect(result.prefix).toBe(actionCode.prefix);
+      expect(result.pubkey).toBe(actionCode.pubkey);
+      expect(result.timestamp).toBe(actionCode.timestamp);
+      expect(result.signature).toBe(actionCode.signature);
+      expect(result.chain).toBe(actionCode.chain);
+      expect(result.status).toBe(actionCode.status);
+      
+      // Only transaction should be different
+      expect(result.transaction?.transaction).not.toBe(actionCode.transaction.transaction);
+    });
+
+    it('should handle invalid base64 transaction data', async () => {
+      const actionCodeWithInvalidBase64 = {
+        ...actionCode,
+        transaction: {
+          transaction: 'invalid-base64-data'
+        }
+      };
+      
+      await expect(adapter.signWithProtocolKey(actionCodeWithInvalidBase64, keypair))
+        .rejects.toThrow('Failed to sign transaction with protocol key');
+    });
+
+    it('should handle corrupted transaction data', async () => {
+      const actionCodeWithCorruptedTx = {
+        ...actionCode,
+        transaction: {
+          transaction: Buffer.from('corrupted-transaction-data').toString('base64')
+        }
+      };
+      
+      await expect(adapter.signWithProtocolKey(actionCodeWithCorruptedTx, keypair))
+        .rejects.toThrow('Failed to sign transaction with protocol key');
+    });
+
+    it('should work with different keypairs', async () => {
+      const differentKeypair = Keypair.generate();
+      
+      // Create a new transaction with the different keypair as fee payer and issuer
+      const metaWithDifferentIssuer = {
+        ...testMeta,
+        iss: differentKeypair.publicKey.toBase58()
+      };
+      const metaString = ProtocolMetaParser.serialize(metaWithDifferentIssuer);
+      const memoInstruction = createMemoInstruction(metaString);
+      const newTransaction = new Transaction();
+      newTransaction.add(memoInstruction);
+      newTransaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      newTransaction.feePayer = differentKeypair.publicKey;
+      
+      const updatedActionCode = {
+        ...actionCode,
+        transaction: {
+          transaction: Buffer.from(newTransaction.serialize({ requireAllSignatures: false })).toString('base64')
+        }
+      };
+      
+      const result = await adapter.signWithProtocolKey(updatedActionCode, differentKeypair);
+      
+      expect(result).toBeDefined();
+      expect(result.transaction?.transaction).not.toBe(updatedActionCode.transaction.transaction);
+    });
+
+    it('should handle transactions with multiple instructions', async () => {
+      // Create transaction with multiple instructions
+      const metaWithMatchingIssuer = {
+        ...testMeta,
+        iss: keypair.publicKey.toBase58()
+      };
+      const multiInstructionTx = new Transaction();
+      multiInstructionTx.add(createMemoInstruction(ProtocolMetaParser.serialize(metaWithMatchingIssuer)));
+      multiInstructionTx.add(createMemoInstruction('Additional instruction'));
+      multiInstructionTx.recentBlockhash = Keypair.generate().publicKey.toBase58();
+      multiInstructionTx.feePayer = keypair.publicKey;
+      
+      const actionCodeWithMultiTx = {
+        ...actionCode,
+        transaction: {
+          transaction: Buffer.from(multiInstructionTx.serialize({ requireAllSignatures: false })).toString('base64')
+        }
+      };
+      
+      const result = await adapter.signWithProtocolKey(actionCodeWithMultiTx, keypair);
+      
+      expect(result).toBeDefined();
+      expect(result.transaction?.transaction).not.toBe(actionCodeWithMultiTx.transaction.transaction);
+    });
+
+    it('should maintain transaction structure after signing', async () => {
+      const result = await adapter.signWithProtocolKey(actionCode, keypair);
+      
+      // Verify the signed transaction can be deserialized
+      const signedTx = Transaction.from(Buffer.from(result.transaction?.transaction!, 'base64'));
+      
+      // Verify it still has the memo instruction
+      const hasMemoInstruction = signedTx.instructions.some(instruction => 
+        instruction.programId.equals(MEMO_PROGRAM_ID)
+      );
+      expect(hasMemoInstruction).toBe(true);
+      
+      // Verify it has signatures
+      expect(signedTx.signatures.length).toBeGreaterThan(0);
+    });
+  });
 }); 

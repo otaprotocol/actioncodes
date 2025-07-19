@@ -8,4 +8,4 @@
 
 > `const` **CODE\_LENGTH**: `8` = `8`
 
-Defined in: [constants.ts:3](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/constants.ts#L3)
+Defined in: [constants.ts:3](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/constants.ts#L3)
