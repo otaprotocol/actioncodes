@@ -61,13 +61,14 @@ describe('CodeGenerator', () => {
             expect(/^\d{8}$/.test(code)).toBe(true);
         });
 
-        it('should generate 8-digit codes for custom prefixes', () => {
+        it('should generate codes with prefix + 8 digits for custom prefixes', () => {
             const timestamp = 1640995200000;
             const prefix = 'CUSTOM';
             const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
-            expect(code).toHaveLength(8);
-            expect(/^\d{8}$/.test(code)).toBe(true);
+            expect(code).toHaveLength(prefix.length + 8);
+            expect(code.startsWith(prefix)).toBe(true);
+            expect(/^[A-Za-z]+\d{8}$/.test(code)).toBe(true);
         });
 
         it('should generate deterministic codes for same inputs', () => {
@@ -121,8 +122,9 @@ describe('CodeGenerator', () => {
             const prefix = 'TEST';
             const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
-            expect(code).toHaveLength(8);
-            expect(/^\d{8}$/.test(code)).toBe(true);
+            expect(code).toHaveLength(prefix.length + 8);
+            expect(code.startsWith(prefix)).toBe(true);
+            expect(/^[A-Za-z]+\d{8}$/.test(code)).toBe(true);
         });
 
         it('should use current time when no timestamp provided', () => {
@@ -206,17 +208,34 @@ describe('CodeGenerator', () => {
             expect(CodeGenerator.validateCodeFormat('99999999')).toBe(true);
         });
 
+        it('should validate correct codes with prefixes', () => {
+            expect(CodeGenerator.validateCodeFormat('ABC12345678')).toBe(true);
+            expect(CodeGenerator.validateCodeFormat('CUSTOM00000000')).toBe(true);
+            expect(CodeGenerator.validateCodeFormat('TEST99999999')).toBe(true);
+        });
+
         it('should reject codes with wrong length', () => {
             expect(CodeGenerator.validateCodeFormat('1234567')).toBe(false);  // 7 digits
             expect(CodeGenerator.validateCodeFormat('123456789')).toBe(false); // 9 digits
             expect(CodeGenerator.validateCodeFormat('')).toBe(false); // empty
         });
 
-        it('should reject codes with non-numeric characters', () => {
-            expect(CodeGenerator.validateCodeFormat('1234567a')).toBe(false);
-            expect(CodeGenerator.validateCodeFormat('1234567A')).toBe(false);
-            expect(CodeGenerator.validateCodeFormat('1234567-')).toBe(false);
-            expect(CodeGenerator.validateCodeFormat('1234567 ')).toBe(false);
+        it('should reject codes with invalid prefix length', () => {
+            expect(CodeGenerator.validateCodeFormat('AB12345678')).toBe(false);  // prefix too short
+            expect(CodeGenerator.validateCodeFormat('VERYLONGPREFIX12345678')).toBe(false); // prefix too long
+        });
+
+        it('should reject codes with non-letter prefixes', () => {
+            expect(CodeGenerator.validateCodeFormat('ABC12345678')).toBe(true);  // valid
+            expect(CodeGenerator.validateCodeFormat('AB112345678')).toBe(false); // prefix has numbers
+            expect(CodeGenerator.validateCodeFormat('AB-12345678')).toBe(false); // prefix has special chars
+        });
+
+        it('should reject codes with non-numeric suffix', () => {
+            expect(CodeGenerator.validateCodeFormat('ABC1234567a')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('ABC1234567A')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('ABC1234567-')).toBe(false);
+            expect(CodeGenerator.validateCodeFormat('ABC1234567 ')).toBe(false);
         });
 
         it('should reject null and undefined', () => {
@@ -234,9 +253,18 @@ describe('CodeGenerator', () => {
 
         it('should reject codes with wrong length', () => {
             expect(CodeGenerator.validateCodeDigits('1234567')).toBe(false);  // 7 digits
-            expect(CodeGenerator.validateCodeDigits('123456789')).toBe(false); // 9 digits
             expect(CodeGenerator.validateCodeDigits('123456')).toBe(false); // 6 digits
             expect(CodeGenerator.validateCodeDigits('')).toBe(false); // empty
+        });
+
+        it('should accept codes with exactly 8 digits (including prefixes)', () => {
+            expect(CodeGenerator.validateCodeDigits('12345678')).toBe(true);  // 8 digits
+            expect(CodeGenerator.validateCodeDigits('ABC12345678')).toBe(true); // prefix + 8 digits
+        });
+
+        it('should reject codes with more than 8 digits', () => {
+            expect(CodeGenerator.validateCodeDigits('123456789')).toBe(false); // 9 digits
+            expect(CodeGenerator.validateCodeDigits('ABC123456789')).toBe(false); // prefix + 9 digits
         });
 
         it('should reject codes with non-numeric characters', () => {
@@ -261,19 +289,21 @@ describe('CodeGenerator', () => {
             // All validation methods should pass
             expect(CodeGenerator.validateCodeFormat(code)).toBe(true);
             expect(CodeGenerator.validateCodeDigits(code)).toBe(true);
-            expect(code).toHaveLength(8);
+            expect(code).toHaveLength(8); // DEFAULT prefix is empty
             expect(/^[0-9]{8}$/.test(code)).toBe(true);
         });
 
         it('should generate valid codes for custom prefixes', () => {
             const timestamp = 1640995200000;
-            const { code } = CodeGenerator.generateCode(testPubkey, 'CUSTOM', timestamp);
+            const prefix = 'CUSTOM';
+            const { code } = CodeGenerator.generateCode(testPubkey, prefix, timestamp);
 
             // All validation methods should pass
             expect(CodeGenerator.validateCodeFormat(code)).toBe(true);
             expect(CodeGenerator.validateCodeDigits(code)).toBe(true);
-            expect(code).toHaveLength(8);
-            expect(/^[0-9]{8}$/.test(code)).toBe(true);
+            expect(code).toHaveLength(prefix.length + 8);
+            expect(code.startsWith(prefix)).toBe(true);
+            expect(/^[A-Za-z]+\d{8}$/.test(code)).toBe(true);
         });
 
         it('should throw error if generated code fails validation', () => {

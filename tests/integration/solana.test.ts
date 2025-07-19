@@ -63,7 +63,8 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             const actionCode = await protocol.createActionCode(pubkey, async () => signature, 'solana', 'TEST', timestamp);
 
             // Verify action code properties
-            expect(actionCode.code).toHaveLength(8);
+            expect(actionCode.code).toHaveLength('TEST'.length + 8); // prefix + 8 digits
+            expect(actionCode.code.startsWith('TEST')).toBe(true);
             expect(actionCode.pubkey).toBe(pubkey);
             expect(actionCode.chain).toBe('solana');
             expect(actionCode.prefix).toBe('TEST');

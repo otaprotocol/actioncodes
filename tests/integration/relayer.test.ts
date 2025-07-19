@@ -430,7 +430,8 @@ describe('Mock Relayer Integration Tests', () => {
             console.log('\n📝 Step 1: Registering action code...');
             const registeredCode = await relayer.register(pubkey, signature, chain, prefix, timestamp);
 
-            expect(registeredCode.code).toHaveLength(8);
+            expect(registeredCode.code).toHaveLength(prefix.length + 8); // prefix + 8 digits
+            expect(registeredCode.code.startsWith(prefix)).toBe(true);
             expect(registeredCode.pubkey).toBe(pubkey);
             expect(registeredCode.chain).toBe(chain);
             expect(registeredCode.prefix).toBe(prefix);

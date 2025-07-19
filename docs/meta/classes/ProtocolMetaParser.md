@@ -6,7 +6,7 @@
 
 # Class: ProtocolMetaParser
 
-Defined in: [meta.ts:19](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L19)
+Defined in: [meta.ts:19](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L19)
 
 Protocol meta parser for structured memo/message parsing
 
@@ -26,7 +26,7 @@ Protocol meta parser for structured memo/message parsing
 
 > `static` **fromInitiator**(`initiator`, `iss`, `prefix`, `params?`, `timestamp?`): [`ProtocolMetaV1`](../interfaces/ProtocolMetaV1.md)
 
-Defined in: [meta.ts:74](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L74)
+Defined in: [meta.ts:74](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L74)
 
 Create protocol meta from code and parameters
 
@@ -74,7 +74,7 @@ ProtocolMeta object
 
 > `static` **parse**(`metaString`): `null` \| [`ProtocolMetaV1`](../interfaces/ProtocolMetaV1.md)
 
-Defined in: [meta.ts:27](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L27)
+Defined in: [meta.ts:27](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L27)
 
 Parse protocol meta from string
 
@@ -98,7 +98,7 @@ Parsed ProtocolMeta object or null if invalid
 
 > `static` **serialize**(`meta`): `string`
 
-Defined in: [meta.ts:55](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L55)
+Defined in: [meta.ts:55](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L55)
 
 Serialize ProtocolMeta to string
 
@@ -122,7 +122,7 @@ Serialized protocol meta string
 
 > `static` **validateCode**(`meta`, `timestamp?`): `boolean`
 
-Defined in: [meta.ts:99](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L99)
+Defined in: [meta.ts:99](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L99)
 
 Validate if a code matches the protocol meta
 
@@ -152,7 +152,7 @@ True if the meta is valid
 
 > `static` **validateMetaFromString**(`metaString`, `timestamp?`): `boolean`
 
-Defined in: [meta.ts:110](https://github.com/otaprotocol/actioncodes/blob/6e0359c879f763df764595dbea0cb596eff80113/src/meta.ts#L110)
+Defined in: [meta.ts:110](https://github.com/otaprotocol/actioncodes/blob/007a9e0d8a0303f8bd7d2ee1ee5ee3e0ff8d987c/src/meta.ts#L110)
 
 Validate if a code matches the protocol meta by parsing from string
 
