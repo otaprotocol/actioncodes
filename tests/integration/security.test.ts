@@ -425,7 +425,7 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             );
 
             // Encode meta into Solana transaction
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             const transaction = new Transaction();
             transaction.add(memoInstruction);
             transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
@@ -448,7 +448,7 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             );
 
             // Encode meta into Solana transaction
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             const transaction = new Transaction();
             transaction.add(memoInstruction);
             transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();

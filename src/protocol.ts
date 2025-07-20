@@ -248,7 +248,7 @@ export class ActionCodesProtocol {
             throw new Error(`Chain '${chain}' is not supported`);
         }
 
-        return adapter.encode(meta);
+        return adapter.encodeMeta(meta);
     }
 
     /**
@@ -263,7 +263,7 @@ export class ActionCodesProtocol {
             return null;
         }
 
-        return adapter.decode(transaction);
+        return adapter.decodeMeta(transaction);
     }
 
     /**
@@ -344,7 +344,7 @@ export class ActionCodesProtocol {
             return null;
         }
 
-        return adapter.decode(transaction);
+        return adapter.decodeMeta(transaction);
     }
 
     /**

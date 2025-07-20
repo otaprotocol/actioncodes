@@ -88,7 +88,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             expect(meta.params).toBe('payment_params');
 
             // 4. Encode protocol meta using adapter
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             expect(memoInstruction.programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
             // 5. Create transaction with protocol meta
@@ -99,7 +99,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             transaction.sign(authorityKeypair);
 
             // 6. Decode protocol meta from transaction
-            const decodedMeta = solanaAdapter.decode(transaction);
+            const decodedMeta = solanaAdapter.decodeMeta(transaction);
             expect(decodedMeta).toEqual(meta);
 
             // 7. Validate transaction using adapter
@@ -140,7 +140,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             const meta = protocol.createProtocolMeta(actionCode, authorityKeypair.publicKey.toBase58());
 
             // Create valid transaction
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             const transaction = new Transaction();
             transaction.add(memoInstruction);
             transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
@@ -172,7 +172,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             const meta = protocol.createProtocolMeta(actionCode, authorityKeypair.publicKey.toBase58());
 
             // Create versioned transaction
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             const messageV0 = new MessageV0({
                 header: {
                     numRequiredSignatures: 1,
@@ -293,7 +293,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             const meta = protocol.createProtocolMeta(actionCode, authorityKeypair.publicKey.toBase58());
 
             // Create transaction
-            const memoInstruction = solanaAdapter.encode(meta);
+            const memoInstruction = solanaAdapter.encodeMeta(meta);
             const transaction = new Transaction();
             transaction.add(memoInstruction);
             transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();

@@ -6,7 +6,7 @@
 
 # Interface: ActionCodeFields
 
-Defined in: [actioncode.ts:19](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L19)
+Defined in: [actioncode.ts:19](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L19)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [actioncode.ts:19](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **chain**: `"solana"`
 
-Defined in: [actioncode.ts:25](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L25)
+Defined in: [actioncode.ts:25](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L25)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [actioncode.ts:25](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **code**: `string`
 
-Defined in: [actioncode.ts:20](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L20)
+Defined in: [actioncode.ts:20](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L20)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [actioncode.ts:20](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **expiresAt**: `number`
 
-Defined in: [actioncode.ts:28](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L28)
+Defined in: [actioncode.ts:28](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L28)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [actioncode.ts:28](https://github.com/otaprotocol/actioncodes/blob/c
 
 > `optional` **metadata**: [`ActionCodeMetadata`](ActionCodeMetadata.md)
 
-Defined in: [actioncode.ts:27](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L27)
+Defined in: [actioncode.ts:27](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L27)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [actioncode.ts:27](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **prefix**: `string`
 
-Defined in: [actioncode.ts:21](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L21)
+Defined in: [actioncode.ts:21](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L21)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [actioncode.ts:21](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **pubkey**: `string`
 
-Defined in: [actioncode.ts:22](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L22)
+Defined in: [actioncode.ts:22](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L22)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [actioncode.ts:22](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **signature**: `string`
 
-Defined in: [actioncode.ts:24](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L24)
+Defined in: [actioncode.ts:24](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L24)
 
 ***
 
@@ -70,7 +70,7 @@ Defined in: [actioncode.ts:24](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **status**: [`ActionCodeStatus`](../type-aliases/ActionCodeStatus.md)
 
-Defined in: [actioncode.ts:29](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L29)
+Defined in: [actioncode.ts:29](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L29)
 
 ***
 
@@ -78,7 +78,7 @@ Defined in: [actioncode.ts:29](https://github.com/otaprotocol/actioncodes/blob/c
 
 > **timestamp**: `number`
 
-Defined in: [actioncode.ts:23](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L23)
+Defined in: [actioncode.ts:23](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L23)
 
 ***
 
@@ -86,4 +86,4 @@ Defined in: [actioncode.ts:23](https://github.com/otaprotocol/actioncodes/blob/c
 
 > `optional` **transaction**: [`ActionCodeTransaction`](ActionCodeTransaction.md)
 
-Defined in: [actioncode.ts:26](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/actioncode.ts#L26)
+Defined in: [actioncode.ts:26](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L26)

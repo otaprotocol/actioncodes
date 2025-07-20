@@ -3,16 +3,17 @@ import { ProtocolMetaV1 } from './meta';
 import { ActionCode } from './actioncode';
 import { BaseChainAdapter } from './adapters/base';
 import { SolanaAdapter } from './adapters/solana';
+import { Keypair } from '@solana/web3.js';
 
 // Mock chain adapter for testing
 class MockChainAdapter extends BaseChainAdapter<any> {
     readonly chain = 'mock';
 
-    encode(meta: ProtocolMetaV1): any {
+    encodeMeta(meta: ProtocolMetaV1): any {
         return { encoded: meta };
     }
 
-    decode(data: any): ProtocolMetaV1 | null {
+    decodeMeta(data: any): ProtocolMetaV1 | null {
         return data.encoded || null;
     }
 
@@ -30,6 +31,10 @@ class MockChainAdapter extends BaseChainAdapter<any> {
 
     public verifyCodeSignature(actionCode: ActionCode): boolean {
         return true; // Mock code signature verification
+    }
+
+    signWithProtocolKey(actionCode: ActionCode, key: Keypair): Promise<ActionCode> {
+        return Promise.resolve(actionCode);
     }
 }
 

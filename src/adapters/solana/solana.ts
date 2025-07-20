@@ -32,9 +32,20 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
      * @param meta - The protocol meta to encode
      * @returns TransactionInstruction for the memo
      */
-    encode(meta: ProtocolMetaV1): TransactionInstruction {
+    encodeMeta(meta: ProtocolMetaV1): TransactionInstruction {
         const metaString = ProtocolMetaParser.serialize(meta);
-        return createMemoInstruction(metaString);
+        const signerPubkeys = [];
+
+        try {
+            if (meta.iss && meta.iss !== 'undefined') {
+                const pubkey = new PublicKey(meta.iss);
+                signerPubkeys.push(pubkey);
+            }
+        } catch (error) {
+            // Ignore error, issuer is not a valid public key
+        }
+
+        return createMemoInstruction(metaString, signerPubkeys);
     }
 
     /**
@@ -42,7 +53,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
      * @param tx - The Solana transaction
      * @returns Decoded ProtocolMetaV1 or null if not found
      */
-    decode(tx: SolanaTransaction): ProtocolMetaV1 | null {
+    decodeMeta(tx: SolanaTransaction): ProtocolMetaV1 | null {
         // Check if it's a versioned transaction
         if ('message' in tx && tx.message) {
             return this.decodeVersionedTransaction(tx as VersionedTransaction);
@@ -51,6 +62,59 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Inject protocol meta into Solana transaction
+     * @param tx - The Solana transaction
+     * @param meta - ProtocolMetaV1 object
+     * @returns Solana transaction with injected meta
+     */
+    injectMeta(tx: SolanaTransaction, meta: ProtocolMetaV1): SolanaTransaction {
+        const metaIx = this.encodeMeta(meta);
+                if (tx instanceof VersionedTransaction) {
+            // Convert TransactionInstruction to MessageCompiledInstruction for versioned transactions
+            
+            // First, ensure all required keys are in static account keys
+            metaIx.keys.forEach(({ pubkey }) => {
+                if (!tx.message.staticAccountKeys.some(key => key.equals(pubkey))) {
+                    tx.message.staticAccountKeys.push(pubkey);
+                }
+            });
+
+            // Ensure programId is also in static keys
+            if (!tx.message.staticAccountKeys.some(key => key.equals(metaIx.programId))) {
+                tx.message.staticAccountKeys.push(metaIx.programId);
+            }
+
+            // Now find the program ID index after ensuring it's in the static keys
+            const programIdIndex = tx.message.staticAccountKeys.findIndex(key => 
+                key.equals(metaIx.programId)
+            );
+            
+            const accountKeyIndexes = metaIx.keys.map(key => {
+                const index = tx.message.staticAccountKeys.findIndex(staticKey => 
+                    staticKey.equals(key.pubkey)
+                );
+                if (index === -1) {
+                    throw new Error(`Account key ${key.pubkey.toBase58()} not found in static account keys`);
+                }
+                return index;
+            });
+            
+            const compiledInstruction = {
+                programIdIndex,
+                accountKeyIndexes,
+                data: metaIx.data
+            };
+            
+            tx.message.compiledInstructions.push(compiledInstruction);
+        } else if (tx instanceof Transaction) {
+            tx.instructions.push(metaIx);
+        } else {
+            throw new Error('Invalid transaction type');
+        }
+        return tx;
     }
 
     /**
@@ -92,12 +156,12 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
                     try {
                         const memoString = new TextDecoder().decode(memoData);
                         const meta = ProtocolMetaParser.parse(memoString);
-                        if (meta && meta.version !== '1') {
-                            return null;
+                        if (meta && meta.version === '1') {
+                            return meta;
                         }
-                        return meta;
+                        // Continue searching if this memo is not a valid protocol meta
                     } catch {
-                        return null;
+                        // Continue searching if this memo cannot be parsed
                     }
                 }
             }
@@ -131,12 +195,12 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
                     try {
                         const memoString = new TextDecoder().decode(memoData);
                         const meta = ProtocolMetaParser.parse(memoString);
-                        if (meta && meta.version !== '1') {
-                            return null;
+                        if (meta && meta.version === '1') {
+                            return meta;
                         }
-                        return meta;
+                        // Continue searching if this memo is not a valid protocol meta
                     } catch {
-                        return null;
+                        // Continue searching if this memo cannot be parsed
                     }
                 }
             }
@@ -182,7 +246,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
         // For example, checking transaction signatures, recent blockhash, etc.
 
         // Verify that the memo instruction contains the expected protocol meta
-        const decodedMeta = this.decode(tx);
+        const decodedMeta = this.decodeMeta(tx);
         if (!decodedMeta) {
             return false;
         }
@@ -217,10 +281,10 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             // Try legacy first, then versioned
             try {
                 const transaction = Transaction.from(buffer);
-                return this.decode(transaction);
+                return this.decodeMeta(transaction);
             } catch {
                 const transaction = VersionedTransaction.deserialize(buffer);
-                return this.decode(transaction);
+                return this.decodeMeta(transaction);
             }
         } catch {
             return null;
@@ -282,7 +346,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
 
             tx.partialSign(key);
 
-            const meta = this.decode(tx);
+            const meta = this.decodeMeta(tx);
 
             if (!meta) {
                 throw new Error('Invalid transaction, protocol meta not found');

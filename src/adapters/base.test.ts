@@ -5,11 +5,11 @@ import { ProtocolMetaV1 } from '../meta';
 class MockBaseAdapter extends BaseChainAdapter {
     readonly chain = 'mock';
 
-    encode(meta: ProtocolMetaV1): any {
+    encodeMeta(meta: ProtocolMetaV1): any {
         return { encoded: meta };
     }
 
-    decode(data: any): ProtocolMetaV1 | null {
+    decodeMeta(data: any): ProtocolMetaV1 | null {
         return data.encoded || null;
     }
 
@@ -62,7 +62,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return invalid version
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '2',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -81,7 +81,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return wrong prefix
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'WRONG',
                 initiator: 'initiator',
@@ -100,7 +100,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return issuer not in authorities
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -119,7 +119,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return missing issuer
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -138,7 +138,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return valid meta
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -163,7 +163,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return valid meta
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -188,7 +188,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return valid meta
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',
@@ -213,7 +213,7 @@ describe('BaseChainAdapter', () => {
             const authorities = ['authority1', 'authority2'];
 
             // Mock decode to return valid meta
-            jest.spyOn(adapter, 'decode').mockReturnValue({
+            jest.spyOn(adapter, 'decodeMeta').mockReturnValue({
                 version: '1',
                 prefix: 'DEFAULT',
                 initiator: 'initiator',

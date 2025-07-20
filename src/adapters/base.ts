@@ -14,14 +14,22 @@ export abstract class BaseChainAdapter<T = any> {
      * @param meta - ProtocolMetaV1 object
      * @returns Chain-specific encoded data
      */
-    abstract encode(meta: ProtocolMetaV1): any;
+    abstract encodeMeta(meta: ProtocolMetaV1): any;
 
     /**
      * Decode protocol meta from chain-specific transaction
      * @param tx - Chain-specific transaction
      * @returns Decoded ProtocolMetaV1 or null
      */
-    abstract decode(tx: T): ProtocolMetaV1 | null;
+    abstract decodeMeta(tx: T): ProtocolMetaV1 | null;
+
+    /**
+     * Inject protocol meta into chain-specific transaction
+     * @param tx - Chain-specific transaction
+     * @param meta - ProtocolMetaV1 object
+     * @returns Chain-specific transaction with injected meta
+     */
+    abstract injectMeta(tx: T, meta: ProtocolMetaV1): T;
 
     /**
      * Validate transaction with protocol meta and authority list
@@ -49,7 +57,7 @@ export abstract class BaseChainAdapter<T = any> {
      */
     detectTampering(tx: T, authorities: string[], expectedPrefix: string = 'DEFAULT'): boolean {
         // First, decode the protocol meta from the transaction
-        const meta = this.decode(tx);
+        const meta = this.decodeMeta(tx);
         if (!meta) {
             return false; // No protocol meta found
         }

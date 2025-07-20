@@ -288,7 +288,7 @@ class MockRelayer {
         }
 
         // Encode meta into transaction
-        const metaInstruction = adapter.encode(meta);
+        const metaInstruction = adapter.encodeMeta(meta);
 
         // For this mock, we'll just return the meta and a mock signed transaction
         // In a real implementation, you would inject the meta into the actual transaction

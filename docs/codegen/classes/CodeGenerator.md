@@ -6,7 +6,7 @@
 
 # Class: CodeGenerator
 
-Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L4)
+Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L4)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [codegen.ts:4](https://github.com/otaprotocol/actioncodes/blob/c724b
 
 > `static` **CODE\_DIGITS**: `number` = `CODE_LENGTH`
 
-Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L6)
+Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L6)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [codegen.ts:6](https://github.com/otaprotocol/actioncodes/blob/c724b
 
 > `static` **MAX\_PREFIX\_LENGTH**: `number`
 
-Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L8)
+Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L8)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [codegen.ts:8](https://github.com/otaprotocol/actioncodes/blob/c724b
 
 > `static` **MIN\_PREFIX\_LENGTH**: `number`
 
-Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L7)
+Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L7)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [codegen.ts:7](https://github.com/otaprotocol/actioncodes/blob/c724b
 
 > `static` **TIME\_WINDOW\_MS**: `number` = `CODE_TTL`
 
-Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L5)
+Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L5)
 
 ## Methods
 
@@ -56,7 +56,7 @@ Defined in: [codegen.ts:5](https://github.com/otaprotocol/actioncodes/blob/c724b
 
 > `static` **deriveCodeHash**(`pubkey`, `prefix`, `timestamp?`): `string`
 
-Defined in: [codegen.ts:167](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L167)
+Defined in: [codegen.ts:167](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L167)
 
 Derive the full SHA-256 hash for storage or encryption key generation
 
@@ -92,7 +92,7 @@ Full SHA-256 hash string
 
 > `static` **generateCode**(`pubkey`, `prefix`, `timestamp`): `object`
 
-Defined in: [codegen.ts:123](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L123)
+Defined in: [codegen.ts:123](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L123)
 
 Generate a deterministic 8-digit code based on public key, prefix, and timestamp
 
@@ -144,7 +144,7 @@ Error if generated code is invalid
 
 > `static` **getExpectedCode**(`pubkey`, `timestamp`, `prefix`): `string`
 
-Defined in: [codegen.ts:186](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L186)
+Defined in: [codegen.ts:186](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L186)
 
 Get the expected code for a given public key and timestamp
 
@@ -180,7 +180,7 @@ Full code string with prefix + 8 digits
 
 > `static` **isValidTimestamp**(`timestamp`): `boolean`
 
-Defined in: [codegen.ts:228](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L228)
+Defined in: [codegen.ts:228](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L228)
 
 Check if a timestamp falls within a valid time window
 
@@ -204,7 +204,7 @@ True if timestamp is valid
 
 > `static` **normalizePrefix**(`prefix`): `string`
 
-Defined in: [codegen.ts:107](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L107)
+Defined in: [codegen.ts:107](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L107)
 
 Normalize prefix - convert PROTOCOL_CODE_PREFIX to empty string, validate others
 
@@ -232,7 +232,7 @@ Error if prefix is invalid
 
 > `static` **validateCode**(`code`, `pubkey`, `timestamp`, `prefix`): `boolean`
 
-Defined in: [codegen.ts:202](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L202)
+Defined in: [codegen.ts:202](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L202)
 
 Validate if a code matches the expected code for a given public key and timestamp
 
@@ -274,7 +274,7 @@ True if code matches expected code and timestamp is valid
 
 > `static` **validateCodeDigits**(`code`): `boolean`
 
-Defined in: [codegen.ts:67](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L67)
+Defined in: [codegen.ts:67](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L67)
 
 Validate that the numeric part of a code is exactly 8 digits
 
@@ -298,7 +298,7 @@ True if numeric part is valid, false otherwise
 
 > `static` **validateCodeFormat**(`code`): `boolean`
 
-Defined in: [codegen.ts:26](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L26)
+Defined in: [codegen.ts:26](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L26)
 
 Validate generated code format (prefix + exactly 8 digits)
 
@@ -322,7 +322,7 @@ True if code is valid, false otherwise
 
 > `static` **validatePrefix**(`prefix`): `boolean`
 
-Defined in: [codegen.ts:15](https://github.com/otaprotocol/actioncodes/blob/c724b443a380f5f43ae1dd1ddefb6b90efaa0aa5/src/codegen.ts#L15)
+Defined in: [codegen.ts:15](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/codegen.ts#L15)
 
 Validate prefix format
 
