@@ -8,4 +8,4 @@
 
 > **ActionCodeStatus** = `"pending"` \| `"resolved"` \| `"finalized"` \| `"expired"` \| `"error"`
 
-Defined in: [actioncode.ts:6](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/actioncode.ts#L6)
+Defined in: [actioncode.ts:6](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/actioncode.ts#L6)

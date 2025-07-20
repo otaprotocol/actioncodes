@@ -27,11 +27,11 @@ function generateValidSignature(
 ): { signature: string; code: string; timestamp: number } {
     const ts = timestamp || Date.now();
     const { code } = CodeGenerator.generateCode(pubkey, prefix, ts);
-    
+
     // Create the message that should be signed using the adapter
     const solanaAdapter = new SolanaAdapter();
     const message = solanaAdapter.getCodeSignatureMessage(code, ts, prefix);
-    
+
     const signature = createRealSignature(keypair, message);
     return { signature, code, timestamp: ts };
 }
@@ -108,7 +108,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
 
             // 8. Attach transaction to action code
             const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
-            const updatedActionCode = protocol.attachTransaction(actionCode, serializedTx, 'payment');
+            const updatedActionCode = protocol.attachTransaction(actionCode, serializedTx, authorityKeypair.publicKey.toBase58(), 'payment_params', 'payment');
 
             expect(updatedActionCode.transaction).toBeDefined();
             expect(updatedActionCode.transaction?.transaction).toBe(serializedTx);
@@ -306,10 +306,6 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             // Decode from base64
             const decodedMeta = solanaAdapter.decodeFromBase64(serialized);
             expect(decodedMeta).toEqual(meta);
-
-            // Validate from base64
-            const isValid = solanaAdapter.validateFromBase64(serialized, authorities, 'DEFAULT');
-            expect(isValid).toBe(true);
         });
     });
 });

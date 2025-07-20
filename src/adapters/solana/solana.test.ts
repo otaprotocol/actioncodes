@@ -286,7 +286,9 @@ describe('SolanaAdapter', () => {
         transaction.sign(authority1);
 
         const serialized = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
-        const result = adapter.validateFromBase64(serialized, mockAuthorities, 'DEFAULT');
+        // Deserialize and validate 
+        const deserializedTx = adapter.deserializeTransaction(serialized);
+        const result = adapter.validate(deserializedTx, mockAuthorities, 'DEFAULT');
         expect(result).toBe(true);
       });
 
@@ -428,7 +430,9 @@ describe('SolanaAdapter', () => {
 
         const versionedTransaction = new VersionedTransaction(messageV0);
         const serialized = Buffer.from(versionedTransaction.serialize()).toString('base64');
-        const result = adapter.validateFromBase64(serialized, mockAuthorities, 'DEFAULT');
+        // Deserialize and validate
+        const deserializedTx = adapter.deserializeTransaction(serialized);
+        const result = adapter.validate(deserializedTx, mockAuthorities, 'DEFAULT');
         expect(result).toBe(true);
       });
 
@@ -581,19 +585,6 @@ describe('SolanaAdapter', () => {
     });
   });
 
-  describe('validateFromBase64', () => {
-    it('should return false for invalid base64 string', () => {
-      const result = adapter.validateFromBase64('invalid-base64', mockAuthorities, 'DEFAULT');
-      expect(result).toBe(false);
-    });
-
-    it('should return false for invalid transaction data', () => {
-      const invalidData = Buffer.from('invalid-transaction-data', 'utf8').toString('base64');
-      const result = adapter.validateFromBase64(invalidData, mockAuthorities, 'DEFAULT');
-      expect(result).toBe(false);
-    });
-  });
-
   describe('validateTransactionIntegrity', () => {
     it('should return false when decoded meta does not match provided meta', () => {
       const metaString = ProtocolMetaParser.serialize(testMeta);
@@ -736,21 +727,27 @@ describe('SolanaAdapter', () => {
       it('should inject meta into legacy transaction', () => {
         const transaction = new Transaction();
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
+        const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
 
-        const result = adapter.injectMeta(transaction, testMeta);
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect(result).toBe(transaction);
-        expect((result as Transaction).instructions.length).toBe(1);
-        expect((result as Transaction).instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(1);
+        expect(deserializedResult.instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
       it('should inject meta into transaction with existing instructions', () => {
         const transaction = new Transaction();
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
 
         // Add an existing instruction (not a memo instruction to avoid conflicts)
         const existingInstruction = new TransactionInstruction({
@@ -759,53 +756,69 @@ describe('SolanaAdapter', () => {
           data: Buffer.from([1, 2, 3])
         });
         transaction.add(existingInstruction);
+        const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
 
-        const result = adapter.injectMeta(transaction, testMeta);
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect((result as Transaction).instructions.length).toBe(2);
-        expect((result as Transaction).instructions[0]).toBe(existingInstruction);
-        expect((result as Transaction).instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(2);
+        expect(deserializedResult.instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
       it('should handle meta with invalid issuer public key', () => {
         const transaction = new Transaction();
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
+        const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
 
         const metaWithInvalidIssuer = {
           ...testMeta,
           iss: 'invalid-public-key'
         };
 
-        const result = adapter.injectMeta(transaction, metaWithInvalidIssuer);
+        const result = adapter.injectMeta(serializedTx, metaWithInvalidIssuer);
 
-        expect((result as Transaction).instructions.length).toBe(1);
-        expect((result as Transaction).instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(1);
+        expect(deserializedResult.instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Should still encode the meta without the invalid issuer
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(metaWithInvalidIssuer);
       });
 
       it('should handle meta without issuer', () => {
         const transaction = new Transaction();
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = authority1.publicKey;
+        const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
 
         const metaWithoutIssuer = {
           ...testMeta,
           iss: undefined
         };
 
-        const result = adapter.injectMeta(transaction, metaWithoutIssuer);
+        const result = adapter.injectMeta(serializedTx, metaWithoutIssuer);
 
-        expect((result as Transaction).instructions.length).toBe(1);
-        expect((result as Transaction).instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(1);
+        expect(deserializedResult.instructions[0].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Should still encode the meta (iss will be serialized as "undefined" string)
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual({
           ...metaWithoutIssuer,
           iss: "undefined"
@@ -828,13 +841,17 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect(result).toBe(versionedTransaction);
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(1);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(1);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
@@ -856,12 +873,17 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(2);
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(2);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
@@ -879,14 +901,19 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
+        expect(typeof result).toBe('string');
+
+        // Deserialize the result to verify
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
         // Should have added MEMO_PROGRAM_ID to static account keys
-        expect((result as VersionedTransaction).message.staticAccountKeys.length).toBe(2);
-        expect((result as VersionedTransaction).message.staticAccountKeys[1].equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(deserializedResult.message.staticAccountKeys.length).toBe(2);
+        expect(deserializedResult.message.staticAccountKeys[1].equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
@@ -904,14 +931,16 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
         // Should have added issuer to static account keys
-        expect((result as VersionedTransaction).message.staticAccountKeys.length).toBe(2);
-        expect((result as VersionedTransaction).message.staticAccountKeys[1].equals(authority1.publicKey)).toBe(true);
+        expect(deserializedResult.message.staticAccountKeys.length).toBe(2);
+        expect(deserializedResult.message.staticAccountKeys[1].equals(authority1.publicKey)).toBe(true);
 
         // Verify the meta was properly encoded
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(testMeta);
       });
 
@@ -933,7 +962,8 @@ describe('SolanaAdapter', () => {
         const versionedTransaction = new VersionedTransaction(messageV0);
 
         // This should work because the adapter adds missing keys
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
         expect(result).toBeDefined();
       });
 
@@ -956,32 +986,34 @@ describe('SolanaAdapter', () => {
           iss: 'invalid-public-key'
         };
 
-        const result = adapter.injectMeta(versionedTransaction, metaWithInvalidIssuer);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, metaWithInvalidIssuer);
 
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(1);
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(1);
 
         // Should still encode the meta without the invalid issuer
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(metaWithInvalidIssuer);
       });
     });
 
     describe('error handling', () => {
       it('should throw error for invalid transaction type', () => {
-        const invalidTransaction = {} as any;
+        const invalidTransaction = 'invalid-base64-string';
 
         expect(() => adapter.injectMeta(invalidTransaction, testMeta))
-          .toThrow('Invalid transaction type');
+          .toThrow('Failed to deserialize Solana transaction');
       });
 
       it('should throw error for null transaction', () => {
         expect(() => adapter.injectMeta(null as any, testMeta))
-          .toThrow('Invalid transaction type');
+          .toThrow('Failed to deserialize Solana transaction');
       });
 
       it('should throw error for undefined transaction', () => {
         expect(() => adapter.injectMeta(undefined as any, testMeta))
-          .toThrow('Invalid transaction type');
+          .toThrow('Failed to deserialize Solana transaction');
       });
     });
   });
@@ -1200,13 +1232,14 @@ describe('SolanaAdapter', () => {
         ...testMeta,
         iss: keypair.publicKey.toBase58()
       };
-      const transactionWithMeta = adapter.injectMeta(emptyTransaction, metaWithMatchingIssuer);
+      const serializedTx = Buffer.from(emptyTransaction.serialize({ requireAllSignatures: false })).toString('base64');
+      const transactionWithMeta = adapter.injectMeta(serializedTx, metaWithMatchingIssuer);
 
       // Create action code with the transaction that has injected meta
       const actionCodeWithInjectedMeta = {
         ...actionCode,
         transaction: {
-          transaction: Buffer.from((transactionWithMeta as Transaction).serialize({ requireAllSignatures: false })).toString('base64')
+          transaction: transactionWithMeta
         }
       };
 
@@ -1259,26 +1292,28 @@ describe('SolanaAdapter', () => {
         ...testMeta,
         iss: keypair.publicKey.toBase58()
       };
-      const versionedTransactionWithMeta = adapter.injectMeta(emptyVersionedTransaction, metaWithMatchingIssuer);
+      const serializedTx = Buffer.from(emptyVersionedTransaction.serialize()).toString('base64');
+      const versionedTransactionWithMeta = adapter.injectMeta(serializedTx, metaWithMatchingIssuer);
 
       // Create action code with the versioned transaction that has injected meta
       const actionCodeWithVersionedTx = {
         ...actionCode,
         transaction: {
-          transaction: Buffer.from((versionedTransactionWithMeta as VersionedTransaction).serialize()).toString('base64')
+          transaction: versionedTransactionWithMeta
         }
       };
 
       // Note: signWithProtocolKey currently only works with legacy transactions
       // This test demonstrates that the injected meta can be decoded from versioned transactions
-      const decodedMeta = adapter.decodeMeta(versionedTransactionWithMeta);
+      const deserializedResult = VersionedTransaction.deserialize(Buffer.from(versionedTransactionWithMeta, 'base64'));
+      const decodedMeta = adapter.decodeMeta(deserializedResult);
       expect(decodedMeta).toEqual(metaWithMatchingIssuer);
 
       // Verify the versioned transaction has the memo instruction
-      expect((versionedTransactionWithMeta as VersionedTransaction).message.compiledInstructions.length).toBe(1);
+      expect(deserializedResult.message.compiledInstructions.length).toBe(1);
 
       // Verify the transaction integrity for versioned transactions
-      const isValid = adapter.validate(versionedTransactionWithMeta, [keypair.publicKey.toBase58()], 'DEFAULT');
+      const isValid = adapter.validate(deserializedResult, [keypair.publicKey.toBase58()], 'DEFAULT');
       expect(isValid).toBe(true);
     });
   });
@@ -1333,10 +1368,10 @@ describe('SolanaAdapter', () => {
         expect(isValid1 || isValid2).toBe(false);
       });
 
-            it('should reject action codes with reused signatures from different timestamps', async () => {
+      it('should reject action codes with reused signatures from different timestamps', async () => {
         const oldTimestamp = Date.now() - 3600000; // 1 hour ago
         const newTimestamp = Date.now();
-        
+
         const actionCodeOld = ActionCode.fromPayload({
           code: 'CODE123',
           prefix: 'DEFAULT',
@@ -1355,7 +1390,7 @@ describe('SolanaAdapter', () => {
           expiresAt: Date.now() + 300000,
           status: 'pending' as const
         });
-        
+
         const actionCodeNew = ActionCode.fromPayload({
           code: 'CODE456',
           prefix: 'DEFAULT',
@@ -1378,7 +1413,7 @@ describe('SolanaAdapter', () => {
         // Both should fail signature verification due to timestamp mismatch
         const isValidOld = adapter.verifyCodeSignature(actionCodeOld);
         const isValidNew = adapter.verifyCodeSignature(actionCodeNew);
-        
+
         expect(isValidOld).toBe(false);
         expect(isValidNew).toBe(false);
       });
@@ -1399,6 +1434,7 @@ describe('SolanaAdapter', () => {
         };
 
         const transaction = new Transaction();
+        transaction.feePayer = freshAuthority.publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Add an unrelated memo instruction first
@@ -1406,33 +1442,38 @@ describe('SolanaAdapter', () => {
         transaction.add(unrelatedMemo);
 
         // Inject protocol meta
-        const result = freshAdapter.injectMeta(transaction, freshTestMeta);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result = freshAdapter.injectMeta(serializedTx, freshTestMeta);
 
-        expect((result as Transaction).instructions.length).toBe(2);
-        expect((result as Transaction).instructions[0]).toBe(unrelatedMemo);
-        expect((result as Transaction).instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(2);
+        expect(deserializedResult.instructions[0].programId.equals(unrelatedMemo.programId)).toBe(true);
+        expect(deserializedResult.instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Should decode the protocol meta correctly (ignores unrelated memo)
-        const decodedMeta = freshAdapter.decodeMeta(result);
+        const decodedMeta = freshAdapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(freshTestMeta);
       });
 
       it('should handle transaction with multiple protocol memos (should decode the first one)', () => {
         const transaction = new Transaction();
+        transaction.feePayer = authority1.publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Add first protocol meta
         const meta1 = { ...testMeta, id: 'first' };
-        const result1 = adapter.injectMeta(transaction, meta1);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result1 = adapter.injectMeta(serializedTx, meta1);
 
         // Add second protocol meta
         const meta2 = { ...testMeta, id: 'second' };
         const result2 = adapter.injectMeta(result1, meta2);
 
-        expect((result2 as Transaction).instructions.length).toBe(2);
+        const deserializedResult = Transaction.from(Buffer.from(result2, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(2);
 
         // Should decode the first protocol meta (current implementation behavior)
-        const decodedMeta = adapter.decodeMeta(result2);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(meta1);
         expect(decodedMeta?.id).toBe('first');
       });
@@ -1467,12 +1508,14 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = freshAdapter.injectMeta(versionedTransaction, freshTestMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = freshAdapter.injectMeta(serializedTx, freshTestMeta);
 
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(2);
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(2);
 
         // Should decode the protocol meta correctly (ignores unrelated memo)
-        const decodedMeta = freshAdapter.decodeMeta(result);
+        const decodedMeta = freshAdapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(freshTestMeta);
       });
 
@@ -1482,6 +1525,7 @@ describe('SolanaAdapter', () => {
     describe('injection order and position', () => {
       it('should inject memo instruction at the end of legacy transaction', () => {
         const transaction = new Transaction();
+        transaction.feePayer = authority1.publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Add multiple existing instructions
@@ -1499,12 +1543,14 @@ describe('SolanaAdapter', () => {
         transaction.add(instruction1);
         transaction.add(instruction2);
 
-        const result = adapter.injectMeta(transaction, testMeta);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect((result as Transaction).instructions.length).toBe(3);
-        expect((result as Transaction).instructions[0]).toBe(instruction1);
-        expect((result as Transaction).instructions[1]).toBe(instruction2);
-        expect((result as Transaction).instructions[2].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(3);
+        expect(deserializedResult.instructions[0].programId.equals(instruction1.programId)).toBe(true);
+        expect(deserializedResult.instructions[1].programId.equals(instruction2.programId)).toBe(true);
+        expect(deserializedResult.instructions[2].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
       });
 
       it('should inject memo instruction at the end of versioned transaction', () => {
@@ -1525,18 +1571,21 @@ describe('SolanaAdapter', () => {
         });
 
         const versionedTransaction = new VersionedTransaction(messageV0);
-        const result = adapter.injectMeta(versionedTransaction, testMeta);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(2);
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(2);
 
         // The last instruction should be the memo instruction
-        const lastInstruction = (result as VersionedTransaction).message.compiledInstructions[1];
-        const programId = (result as VersionedTransaction).message.staticAccountKeys[lastInstruction.programIdIndex];
+        const lastInstruction = deserializedResult.message.compiledInstructions[1];
+        const programId = deserializedResult.message.staticAccountKeys[lastInstruction.programIdIndex];
         expect(programId.equals(MEMO_PROGRAM_ID)).toBe(true);
       });
 
       it('should maintain instruction order when injecting multiple times', () => {
         const transaction = new Transaction();
+        transaction.feePayer = Keypair.generate().publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Add initial instruction
@@ -1548,16 +1597,18 @@ describe('SolanaAdapter', () => {
         transaction.add(initialInstruction);
 
         // Inject meta multiple times
-        const result1 = adapter.injectMeta(transaction, testMeta);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result1 = adapter.injectMeta(serializedTx, testMeta);
         const result2 = adapter.injectMeta(result1, { ...testMeta, id: 'second' });
 
-        expect((result2 as Transaction).instructions.length).toBe(3);
-        expect((result2 as Transaction).instructions[0]).toBe(initialInstruction);
-        expect((result2 as Transaction).instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
-        expect((result2 as Transaction).instructions[2].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        const deserializedResult = Transaction.from(Buffer.from(result2, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(3);
+        expect(deserializedResult.instructions[0].programId.equals(initialInstruction.programId)).toBe(true);
+        expect(deserializedResult.instructions[1].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
+        expect(deserializedResult.instructions[2].programId.equals(MEMO_PROGRAM_ID)).toBe(true);
 
         // Should decode the first injected meta (current implementation behavior)
-        const decodedMeta = adapter.decodeMeta(result2);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta?.id).toBe('def456'); // Original testMeta id
       });
     });
@@ -1565,6 +1616,7 @@ describe('SolanaAdapter', () => {
     describe('cross-prefix meta decode failure', () => {
       it('should reject meta with mismatched prefix even when version is valid', () => {
         const transaction = new Transaction();
+        transaction.feePayer = Keypair.generate().publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Create meta with different prefix
@@ -1573,13 +1625,16 @@ describe('SolanaAdapter', () => {
           prefix: 'DIFFERENT_PREFIX'
         };
 
-        const result = adapter.injectMeta(transaction, metaWithDifferentPrefix);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result = adapter.injectMeta(serializedTx, metaWithDifferentPrefix);
 
         // Should inject successfully
-        expect((result as Transaction).instructions.length).toBe(1);
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(1);
 
         // But validation should fail with expected prefix
-        const isValid = adapter.validate(result, mockAuthorities, 'DEFAULT');
+        const deserializedResult2 = Transaction.from(Buffer.from(result, 'base64'));
+        const isValid = adapter.validate(deserializedResult2, mockAuthorities, 'DEFAULT');
         expect(isValid).toBe(false);
       });
 
@@ -1604,16 +1659,19 @@ describe('SolanaAdapter', () => {
           prefix: 'DIFFERENT_PREFIX'
         };
 
-        const result = adapter.injectMeta(versionedTransaction, metaWithDifferentPrefix);
-        expect((result as VersionedTransaction).message.compiledInstructions.length).toBe(1);
+        const serializedTx = Buffer.from(versionedTransaction.serialize()).toString('base64');
+        const result = adapter.injectMeta(serializedTx, metaWithDifferentPrefix);
+        const deserializedResult = VersionedTransaction.deserialize(Buffer.from(result, 'base64'));
+        expect(deserializedResult.message.compiledInstructions.length).toBe(1);
 
         // But validation should fail with expected prefix
-        const isValid = adapter.validate(result, mockAuthorities, 'DEFAULT');
+        const isValid = adapter.validate(deserializedResult, mockAuthorities, 'DEFAULT');
         expect(isValid).toBe(false);
       });
 
       it('should handle multiple prefixes in same transaction (should decode only matching prefix)', () => {
         const transaction = new Transaction();
+        transaction.feePayer = Keypair.generate().publicKey;
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
 
         // Add memo with different prefix
@@ -1626,12 +1684,14 @@ describe('SolanaAdapter', () => {
         transaction.add(differentPrefixMemo);
 
         // Inject meta with correct prefix
-        const result = adapter.injectMeta(transaction, testMeta);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result = adapter.injectMeta(serializedTx, testMeta);
 
-        expect((result as Transaction).instructions.length).toBe(2);
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        expect(deserializedResult.instructions.length).toBe(2);
 
         // Should decode the meta with correct prefix (first valid one)
-        const decodedMeta = adapter.decodeMeta(result);
+        const decodedMeta = adapter.decodeMeta(deserializedResult);
         expect(decodedMeta).toEqual(metaWithDifferentPrefix);
         expect(decodedMeta?.prefix).toBe('DIFFERENT_PREFIX');
       });
@@ -1639,6 +1699,7 @@ describe('SolanaAdapter', () => {
       it('should validate only transactions with correct prefix', () => {
         const transaction = new Transaction();
         transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+        transaction.feePayer = Keypair.generate().publicKey;
 
         // Create meta with different prefix
         const metaWithDifferentPrefix = {
@@ -1646,17 +1707,19 @@ describe('SolanaAdapter', () => {
           prefix: 'CUSTOM_PREFIX'
         };
 
-        const result = adapter.injectMeta(transaction, metaWithDifferentPrefix);
+        const serializedTx = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
+        const result = adapter.injectMeta(serializedTx, metaWithDifferentPrefix);
 
         // Sign the transaction
-        (result as Transaction).sign(authority1);
+        const deserializedResult = Transaction.from(Buffer.from(result, 'base64'));
+        deserializedResult.sign(authority1);
 
         // Should fail validation with DEFAULT prefix
-        const isValidWithDefault = adapter.validate(result, mockAuthorities, 'DEFAULT');
+        const isValidWithDefault = adapter.validate(deserializedResult, mockAuthorities, 'DEFAULT');
         expect(isValidWithDefault).toBe(false);
 
         // Should pass validation with CUSTOM_PREFIX
-        const isValidWithCustom = adapter.validate(result, mockAuthorities, 'CUSTOM_PREFIX');
+        const isValidWithCustom = adapter.validate(deserializedResult, mockAuthorities, 'CUSTOM_PREFIX');
         expect(isValidWithCustom).toBe(true);
       });
     });

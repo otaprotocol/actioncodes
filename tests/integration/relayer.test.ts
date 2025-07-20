@@ -3,7 +3,7 @@ import { ActionCode, ActionCodeStatus, ActionCodeFields } from '../../src/action
 import { ProtocolMetaV1 } from '../../src/meta';
 import { BaseChainAdapter } from '../../src/adapters/base';
 import { SolanaAdapter } from '../../src/adapters/solana';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 import * as nacl from 'tweetnacl';
 import { CodeGenerator } from '../../src/codegen';
 import { Buffer } from "buffer";
@@ -210,6 +210,8 @@ class MockRelayer {
         const updatedCode = this.protocol.attachTransaction(
             storedCode.actionCode as ActionCode,
             request.transaction,
+            this.config.authorityKey,
+            request.metadata?.params ? JSON.stringify(request.metadata.params) : undefined,
             request.txType
         ) as ActionCode;
 
@@ -450,7 +452,13 @@ describe('Mock Relayer Integration Tests', () => {
 
             // 3. Attach transaction
             console.log('\n🔗 Step 3: Attaching transaction...');
-            const transaction = 'base64_encoded_transaction_data';
+            // Create a proper serialized transaction
+            const solanaTransaction = new Transaction();
+            solanaTransaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            solanaTransaction.feePayer = authorityKeypair.publicKey;
+            solanaTransaction.partialSign(authorityKeypair);
+            const transaction = solanaTransaction.serialize({ requireAllSignatures: false }).toString('base64');
             const attachRequest: AttachRequest = {
                 code: registeredCode.code,
                 transaction,
@@ -465,7 +473,7 @@ describe('Mock Relayer Integration Tests', () => {
 
             expect(attachedCode).not.toBeNull();
             expect(attachedCode!.transaction).toBeDefined();
-            expect(attachedCode!.transaction!.transaction).toBe(transaction);
+            expect(attachedCode!.transaction!.transaction).not.toBe(transaction); // Should be different due to meta injection
             expect(attachedCode!.transaction!.txType).toBe('payment');
             expect(attachedCode!.status).toBe('resolved');
             expect(attachedCode!.metadata?.description).toBe('Test payment transaction');
@@ -580,9 +588,27 @@ describe('Mock Relayer Integration Tests', () => {
             const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
             // Attach transaction
+            // Create proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             const attachRequest: AttachRequest = {
                 code: code.code,
-                transaction: 'transaction_data',
+                transaction: serializedTx,
                 txType: 'swap',
                 metadata: {
                     description: 'Token swap',
@@ -594,7 +620,7 @@ describe('Mock Relayer Integration Tests', () => {
 
             expect(attachedCode).not.toBeNull();
             expect(attachedCode!.status).toBe('resolved');
-            expect(attachedCode!.transaction!.transaction).toBe('transaction_data');
+            expect(attachedCode!.transaction!.transaction).not.toBe(serializedTx); // Should be different due to meta injection
             expect(attachedCode!.transaction!.txType).toBe('swap');
             expect(attachedCode!.metadata?.description).toBe('Token swap');
         });
@@ -608,10 +634,41 @@ describe('Mock Relayer Integration Tests', () => {
             // Register code
             const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
+            // Create proper serialized transactions
+            const authorityKeypair1 = Keypair.generate();
+            const transaction1 = new Transaction();
+            transaction1.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction1.feePayer = authorityKeypair1.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction1 = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction1.add(dummyInstruction1);
+            transaction1.sign(authorityKeypair1);
+            const serializedTx1 = transaction1.serialize({ requireAllSignatures: false }).toString('base64');
+
+            const authorityKeypair2 = Keypair.generate();
+            const transaction2 = new Transaction();
+            transaction2.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction2.feePayer = authorityKeypair2.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction2 = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction2.add(dummyInstruction2);
+            transaction2.sign(authorityKeypair2);
+            const serializedTx2 = transaction2.serialize({ requireAllSignatures: false }).toString('base64');
+
             // First attachment
             const attachRequest1: AttachRequest = {
                 code: code.code,
-                transaction: 'transaction_1'
+                transaction: serializedTx1
             };
             const attached1 = relayer.attach(attachRequest1);
             expect(attached1).not.toBeNull();
@@ -619,7 +676,7 @@ describe('Mock Relayer Integration Tests', () => {
             // Second attachment should fail
             const attachRequest2: AttachRequest = {
                 code: code.code,
-                transaction: 'transaction_2'
+                transaction: serializedTx2
             };
             const attached2 = relayer.attach(attachRequest2);
             expect(attached2).toBeNull();
@@ -674,10 +731,28 @@ describe('Mock Relayer Integration Tests', () => {
             const code1 = await relayer.register(pubkey, signature1, chain, 'TEST', timestamp1);
             const code2 = await relayer.register(pubkey, signature2, chain, 'DEMO', timestamp2);
 
+            // Create proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             // Attach transaction to one
             relayer.attach({
                 code: code1.code,
-                transaction: 'transaction_data'
+                transaction: serializedTx
             });
 
             // Finalize one
@@ -710,9 +785,27 @@ describe('Mock Relayer Integration Tests', () => {
         });
 
         it('should handle invalid attach requests', async () => {
+            // Create proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             const attached = relayer.attach({
                 code: 'nonexistent',
-                transaction: 'transaction_data'
+                transaction: serializedTx
             });
             expect(attached).toBeNull();
         });
@@ -733,17 +826,48 @@ describe('Mock Relayer Integration Tests', () => {
             // Register code
             const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
+            // Create proper serialized transactions
+            const authorityKeypair1 = Keypair.generate();
+            const transaction1 = new Transaction();
+            transaction1.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction1.feePayer = authorityKeypair1.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction1 = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction1.add(dummyInstruction1);
+            transaction1.sign(authorityKeypair1);
+            const serializedTx1 = transaction1.serialize({ requireAllSignatures: false }).toString('base64');
+
+            const authorityKeypair2 = Keypair.generate();
+            const transaction2 = new Transaction();
+            transaction2.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction2.feePayer = authorityKeypair2.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction2 = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction2.add(dummyInstruction2);
+            transaction2.sign(authorityKeypair2);
+            const serializedTx2 = transaction2.serialize({ requireAllSignatures: false }).toString('base64');
+
             // Attach transaction and finalize
             relayer.attach({
                 code: code.code,
-                transaction: 'transaction_data'
+                transaction: serializedTx1
             });
             relayer.finalize(code.code, 'tx_signature');
 
             // Try to attach another transaction to finalized code
             const attached = relayer.attach({
                 code: code.code,
-                transaction: 'another_transaction'
+                transaction: serializedTx2
             });
 
             // Should reject attaching to finalized code
@@ -772,10 +896,28 @@ describe('Mock Relayer Integration Tests', () => {
                 storedCode.actionCode = expiredActionCode as ActionCode;
             }
 
+            // Create proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             // Try to attach transaction to expired code
             const attached = relayer.attach({
                 code: code.code,
-                transaction: 'transaction_data'
+                transaction: serializedTx
             });
 
             // Should reject attaching to expired code
@@ -830,10 +972,28 @@ describe('Mock Relayer Integration Tests', () => {
             // Register code
             const code = await relayer.register(pubkey, signature, chain, 'DEFAULT', timestamp);
 
+            // Create proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             // Attach transaction first
             const attached = relayer.attach({
                 code: code.code,
-                transaction: 'transaction_data'
+                transaction: serializedTx
             });
             expect(attached).not.toBeNull();
             expect(attached!.status).toBe('resolved');
@@ -846,9 +1006,27 @@ describe('Mock Relayer Integration Tests', () => {
         });
 
         it('❌ Rejects attaching tx to non-existent code', () => {
+            // Create a dummy transaction for testing
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const authorityKeypair = Keypair.generate();
+            transaction.feePayer = authorityKeypair.publicKey;
+            
+            // Add a dummy instruction to make the transaction valid
+            const dummyInstruction = new TransactionInstruction({
+                keys: [],
+                programId: new PublicKey('11111111111111111111111111111111'),
+                data: Buffer.from([])
+            });
+            transaction.add(dummyInstruction);
+            
+            // Sign the transaction with the authority (issuer)
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+
             const attached = relayer.attach({
                 code: 'NONEXISTENT_CODE',
-                transaction: 'transaction_data'
+                transaction: serializedTx
             });
 
             expect(attached).toBeNull();

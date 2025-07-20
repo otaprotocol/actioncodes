@@ -6,7 +6,7 @@
 
 # Class: ActionCodesProtocol
 
-Defined in: [protocol.ts:31](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L31)
+Defined in: [protocol.ts:31](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L31)
 
 OTA Protocol - Main entry point for the One-Time Action Code Protocol
 
@@ -19,7 +19,7 @@ action codes across multiple blockchain networks.
 
 > **new ActionCodesProtocol**(`config?`): `ActionCodesProtocol`
 
-Defined in: [protocol.ts:35](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L35)
+Defined in: [protocol.ts:35](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L35)
 
 #### Parameters
 
@@ -35,11 +35,11 @@ Defined in: [protocol.ts:35](https://github.com/otaprotocol/actioncodes/blob/57f
 
 ### attachTransaction()
 
-> **attachTransaction**(`actionCode`, `transaction`, `txType?`): [`ActionCode`](../../actioncode/classes/ActionCode.md)
+> **attachTransaction**(`actionCode`, `transaction`, `issuer`, `params?`, `txType?`): [`ActionCode`](../../actioncode/classes/ActionCode.md)
 
-Defined in: [protocol.ts:161](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L161)
+Defined in: [protocol.ts:163](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L163)
 
-Attach a transaction to an action code
+Attach a transaction to an action code with automatic protocol meta injection
 
 #### Parameters
 
@@ -53,7 +53,19 @@ ActionCode to attach transaction to
 
 `string`
 
-Chain-specific transaction data
+Chain-specific transaction data (serialized)
+
+##### issuer
+
+`string`
+
+Issuer public key for protocol meta, this is the proof of who is attaching the transaction to the action code
+
+##### params?
+
+`string`
+
+Optional parameters for protocol meta
 
 ##### txType?
 
@@ -65,7 +77,7 @@ Optional transaction type
 
 [`ActionCode`](../../actioncode/classes/ActionCode.md)
 
-Updated ActionCode
+Updated ActionCode with injected protocol meta
 
 ***
 
@@ -73,7 +85,7 @@ Updated ActionCode
 
 > **createActionCode**(`pubkey`, `signFn`, `chain`, `prefix`, `timestamp?`): `Promise`\<[`ActionCode`](../../actioncode/classes/ActionCode.md)\>
 
-Defined in: [protocol.ts:111](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L111)
+Defined in: [protocol.ts:111](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L111)
 
 Create an action code
 
@@ -119,9 +131,9 @@ Promise resolving to a complete ActionCode object
 
 ### createProtocolMeta()
 
-> **createProtocolMeta**(`actionCode`, `issuer?`, `params?`): [`ProtocolMetaV1`](../../meta/interfaces/ProtocolMetaV1.md)
+> **createProtocolMeta**(`actionCode`, `issuer?`, `params?`, `timestamp?`): [`ProtocolMetaV1`](../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [protocol.ts:226](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L226)
+Defined in: [protocol.ts:252](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L252)
 
 Create protocol meta for a transaction
 
@@ -145,6 +157,12 @@ Optional issuer public key
 
 Optional parameters
 
+##### timestamp?
+
+`number`
+
+Optional timestamp (defaults to action code timestamp)
+
 #### Returns
 
 [`ProtocolMetaV1`](../../meta/interfaces/ProtocolMetaV1.md)
@@ -157,7 +175,7 @@ ProtocolMetaV1 object
 
 > **decodeProtocolMeta**(`transaction`, `chain`): `null` \| [`ProtocolMetaV1`](../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [protocol.ts:260](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L260)
+Defined in: [protocol.ts:288](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L288)
 
 Decode protocol meta from a transaction
 
@@ -187,7 +205,7 @@ Decoded ProtocolMetaV1 or null
 
 > **decodeProtocolMetaTyped**\<`T`\>(`transaction`, `chain`): `null` \| [`ProtocolMetaV1`](../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [protocol.ts:341](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L341)
+Defined in: [protocol.ts:370](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L370)
 
 Decode protocol meta with type safety
 
@@ -223,7 +241,7 @@ Decoded ProtocolMetaV1 or null
 
 > **detectTampering**\<`T`\>(`transaction`, `chain`, `authorities`, `expectedPrefix?`): `boolean`
 
-Defined in: [protocol.ts:321](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L321)
+Defined in: [protocol.ts:350](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L350)
 
 Detect tampered transactions with type safety
 
@@ -271,7 +289,7 @@ True if transaction is valid and not tampered
 
 > **encodeProtocolMeta**(`meta`, `chain`): `any`
 
-Defined in: [protocol.ts:245](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L245)
+Defined in: [protocol.ts:273](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L273)
 
 Encode protocol meta for a specific chain
 
@@ -301,7 +319,7 @@ Chain-specific encoded meta
 
 > **finalizeActionCode**(`actionCode`, `txSignature`): [`ActionCode`](../../actioncode/classes/ActionCode.md)
 
-Defined in: [protocol.ts:194](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L194)
+Defined in: [protocol.ts:219](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L219)
 
 Finalize an action code with transaction signature
 
@@ -331,7 +349,7 @@ Updated ActionCode
 
 > **getChainAdapter**\<`T`\>(`chain`): `undefined` \| [`BaseChainAdapter`](../../adapters/base/classes/BaseChainAdapter.md)\<`T`\>
 
-Defined in: [protocol.ts:77](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L77)
+Defined in: [protocol.ts:77](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L77)
 
 Get chain adapter with proper typing
 
@@ -361,7 +379,7 @@ Chain adapter or undefined
 
 > **getConfig**(): [`ProtocolConfig`](../interfaces/ProtocolConfig.md)
 
-Defined in: [protocol.ts:354](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L354)
+Defined in: [protocol.ts:383](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L383)
 
 Get protocol configuration
 
@@ -377,7 +395,7 @@ Current protocol configuration
 
 > **getRegisteredChains**(): `string`[]
 
-Defined in: [protocol.ts:59](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L59)
+Defined in: [protocol.ts:59](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L59)
 
 Get registered chain adapters
 
@@ -393,7 +411,7 @@ Array of registered chain identifiers
 
 > **isChainSupported**(`chain`): `boolean`
 
-Defined in: [protocol.ts:68](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L68)
+Defined in: [protocol.ts:68](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L68)
 
 Check if a chain is supported
 
@@ -417,7 +435,7 @@ True if chain is supported
 
 > **registerAdapter**\<`T`\>(`adapter`): `void`
 
-Defined in: [protocol.ts:51](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L51)
+Defined in: [protocol.ts:51](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L51)
 
 Register a chain adapter
 
@@ -445,7 +463,7 @@ Chain adapter implementation
 
 > **updateConfig**(`updates`): `void`
 
-Defined in: [protocol.ts:362](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L362)
+Defined in: [protocol.ts:391](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L391)
 
 Update protocol configuration
 
@@ -467,7 +485,7 @@ Configuration updates
 
 > **validateActionCode**(`actionCode`): `boolean`
 
-Defined in: [protocol.ts:86](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L86)
+Defined in: [protocol.ts:86](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L86)
 
 Validate an action code
 
@@ -491,7 +509,7 @@ True if valid
 
 > **validateTransaction**(`transaction`, `chain`, `authorities`, `expectedPrefix?`): `boolean`
 
-Defined in: [protocol.ts:277](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L277)
+Defined in: [protocol.ts:305](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L305)
 
 Validate a transaction with protocol meta
 
@@ -501,7 +519,7 @@ Validate a transaction with protocol meta
 
 `any`
 
-Chain-specific transaction
+Chain-specific transaction (can be serialized string or deserialized object)
 
 ##### chain
 
@@ -533,7 +551,7 @@ True if transaction is valid
 
 > **validateTransactionTyped**\<`T`\>(`transaction`, `chain`, `authorities`, `expectedPrefix?`): `boolean`
 
-Defined in: [protocol.ts:299](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L299)
+Defined in: [protocol.ts:328](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L328)
 
 Type-safe transaction validation for specific chains
 
@@ -581,7 +599,7 @@ True if transaction is valid
 
 > `static` **create**(): `ActionCodesProtocol`
 
-Defined in: [protocol.ts:370](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L370)
+Defined in: [protocol.ts:399](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L399)
 
 Create a new protocol instance with default configuration
 
@@ -597,7 +615,7 @@ New protocol instance
 
 > `static` **createWithConfig**(`config`): `ActionCodesProtocol`
 
-Defined in: [protocol.ts:379](https://github.com/otaprotocol/actioncodes/blob/57f8663219c9af5c455731c797e721cd72058ff4/src/protocol.ts#L379)
+Defined in: [protocol.ts:408](https://github.com/otaprotocol/actioncodes/blob/8a4aa3018c6ed7e0af5268c1fef98a56ef85fed1/src/protocol.ts#L408)
 
 Create a new protocol instance with custom configuration
 

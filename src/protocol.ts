@@ -152,15 +152,19 @@ export class ActionCodesProtocol {
     }
 
     /**
-     * Attach a transaction to an action code
+     * Attach a transaction to an action code with automatic protocol meta injection
      * @param actionCode - ActionCode to attach transaction to
-     * @param transaction - Chain-specific transaction data
+     * @param transaction - Chain-specific transaction data (serialized)
+     * @param issuer - Issuer public key for protocol meta, this is the proof of who is attaching the transaction to the action code
+     * @param params - Optional parameters for protocol meta
      * @param txType - Optional transaction type
-     * @returns Updated ActionCode
+     * @returns Updated ActionCode with injected protocol meta
      */
     attachTransaction(
         actionCode: ActionCode,
         transaction: string,
+        issuer: string,
+        params?: string,
         txType?: string
     ): ActionCode {
         const chain = actionCode.chain;
@@ -169,9 +173,30 @@ export class ActionCodesProtocol {
             throw new Error(`Chain '${chain}' is not supported`);
         }
 
+        const adapter = this.getChainAdapter(chain);
+
+        if (!adapter) {
+            throw new Error(`No adapter found for chain '${chain}'`);
+        }
+
+        // Create protocol meta for the transaction using the action code's timestamp
+        const protocolMeta = this.createProtocolMeta(actionCode, issuer, params);
+
+        // Check if transaction already has protocol meta
+        const existingMeta = adapter.decodeMeta(transaction);
+        let finalTransaction: string;
+
+        if (existingMeta && existingMeta.id === protocolMeta.id) {
+            // Transaction already has the correct protocol meta, use as-is
+            finalTransaction = transaction;
+        } else {
+            // Inject protocol meta into the transaction using the adapter
+            finalTransaction = adapter.injectMeta(transaction, protocolMeta);
+        }
+
         // Create transaction object
         const txObject: ActionCodeTransaction = {
-            transaction,
+            transaction: finalTransaction,
             txType: txType || chain
         };
 
@@ -221,18 +246,21 @@ export class ActionCodesProtocol {
      * @param actionCode - ActionCode to create meta for
      * @param issuer - Optional issuer public key
      * @param params - Optional parameters
+     * @param timestamp - Optional timestamp (defaults to action code timestamp)
      * @returns ProtocolMetaV1 object
      */
     createProtocolMeta(
         actionCode: ActionCode,
         issuer?: string,
-        params?: string
+        params?: string,
+        timestamp?: number
     ): ProtocolMetaV1 {
         return ProtocolMetaParser.fromInitiator(
             actionCode.pubkey,
             issuer || actionCode.pubkey,
             actionCode.prefix,
-            params
+            params,
+            timestamp || actionCode.timestamp
         );
     }
 
@@ -268,7 +296,7 @@ export class ActionCodesProtocol {
 
     /**
      * Validate a transaction with protocol meta
-     * @param transaction - Chain-specific transaction
+     * @param transaction - Chain-specific transaction (can be serialized string or deserialized object)
      * @param chain - Source chain
      * @param authorities - Array of valid protocol authority identifiers
      * @param expectedPrefix - Expected protocol prefix
@@ -285,6 +313,7 @@ export class ActionCodesProtocol {
             return false;
         }
 
+        // Otherwise use the regular validate method
         return adapter.validate(transaction, authorities, expectedPrefix);
     }
 

@@ -25,11 +25,11 @@ export abstract class BaseChainAdapter<T = any> {
 
     /**
      * Inject protocol meta into chain-specific transaction
-     * @param tx - Chain-specific transaction
+     * @param serializedTx - Serialized transaction string
      * @param meta - ProtocolMetaV1 object
-     * @returns Chain-specific transaction with injected meta
+     * @returns Serialized transaction with injected meta
      */
-    abstract injectMeta(tx: T, meta: ProtocolMetaV1): T;
+    abstract injectMeta(serializedTx: string, meta: ProtocolMetaV1): string;
 
     /**
      * Validate transaction with protocol meta and authority list

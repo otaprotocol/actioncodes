@@ -3,11 +3,15 @@ import { ProtocolMetaV1 } from './meta';
 import { ActionCode } from './actioncode';
 import { BaseChainAdapter } from './adapters/base';
 import { SolanaAdapter } from './adapters/solana';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 
 // Mock chain adapter for testing
 class MockChainAdapter extends BaseChainAdapter<any> {
     readonly chain = 'mock';
+
+    injectMeta(serializedTx: string, meta: ProtocolMetaV1): string {
+        return serializedTx;
+    }
 
     encodeMeta(meta: ProtocolMetaV1): any {
         return { encoded: meta };
@@ -259,7 +263,7 @@ describe('ActionCodesProtocol', () => {
     });
 
     describe('Transaction Management', () => {
-        it('should attach transaction to action code', () => {
+        it('should attach transaction to action code with protocol meta injection', () => {
             const protocol = ActionCodesProtocol.create();
             const solanaAdapter = new SolanaAdapter();
             protocol.registerAdapter(solanaAdapter);
@@ -275,9 +279,18 @@ describe('ActionCodesProtocol', () => {
                 expiresAt: Date.now() + 120000
             });
 
-            const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
+            // Create a proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            const issuerKeypair = Keypair.generate();
+            transaction.feePayer = issuerKeypair.publicKey;
+            const mockTransaction = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+            const issuer = issuerKeypair.publicKey.toBase58();
+            const params = 'test_params';
 
-            expect(updatedCode.transaction?.transaction).toBe('transaction_data');
+            const updatedCode = protocol.attachTransaction(actionCode, mockTransaction, issuer, params, 'payment');
+
+            expect(updatedCode.transaction?.transaction).not.toBe(mockTransaction); // Should be different due to meta injection
             expect(updatedCode.transaction?.txType).toBe('payment');
             expect(updatedCode.status).toBe('resolved');
         });
@@ -296,7 +309,7 @@ describe('ActionCodesProtocol', () => {
             });
 
             expect(() => {
-                protocol.attachTransaction(actionCode, 'transaction_data');
+                protocol.attachTransaction(actionCode, 'transaction_data', 'test_issuer_pubkey', 'test_params', 'payment');
             }).toThrow("Chain 'unsupported_chain' is not supported");
         });
 
@@ -454,7 +467,7 @@ describe('ActionCodesProtocol', () => {
             });
 
             expect(() => {
-                protocol.attachTransaction(actionCode, 'transaction');
+                protocol.attachTransaction(actionCode, 'transaction', 'test_issuer_pubkey', 'test_params', 'payment');
             }).toThrow('Chain \'unsupported\' is not supported');
         });
     });

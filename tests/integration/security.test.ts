@@ -222,8 +222,14 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
         it('❌ Rejects same code if it\'s already finalized', async () => {
             const { actionCode } = await generateValidActionCode(userKeypair);
 
+            // Create a proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction.feePayer = authorityKeypair.publicKey;
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+            
             // Attach transaction and finalize
-            const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
+            const updatedCode = protocol.attachTransaction(actionCode, serializedTx, authorityKeypair.publicKey.toBase58(), 'params', 'payment');
             const finalizedCode = protocol.finalizeActionCode(updatedCode, 'tx_signature');
 
             expect(finalizedCode.status).toBe('finalized');
@@ -245,15 +251,27 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
         it('❌ Rejects attaching a new tx to a finalized code', async () => {
             const { actionCode } = await generateValidActionCode(userKeypair);
 
+            // Create a proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction.feePayer = authorityKeypair.publicKey;
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+            
             // Attach transaction and finalize
-            const updatedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
+            const updatedCode = protocol.attachTransaction(actionCode, serializedTx, authorityKeypair.publicKey.toBase58(), 'params', 'payment');
             const finalizedCode = protocol.finalizeActionCode(updatedCode, 'tx_signature');
 
             expect(finalizedCode.status).toBe('finalized');
 
+            // Create another transaction for the second attachment
+            const transaction2 = new Transaction();
+            transaction2.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction2.feePayer = authorityKeypair.publicKey;
+            const serializedTx2 = transaction2.serialize({ requireAllSignatures: false }).toString('base64');
+            
             // Try to attach another transaction - this should fail because it already has a transaction
-            const newAttachedCode = protocol.attachTransaction(finalizedCode, 'another_transaction', 'payment');
-            expect(newAttachedCode.transaction?.transaction).toBe('another_transaction'); // Protocol allows overwriting
+            const newAttachedCode = protocol.attachTransaction(finalizedCode, serializedTx2, authorityKeypair.publicKey.toBase58(), 'params', 'payment');
+            expect(newAttachedCode.transaction?.transaction).not.toBe(serializedTx2); // Should be different due to meta injection
             expect(newAttachedCode.status).toBe('resolved'); // Status resets to resolved
         });
     });
@@ -392,8 +410,14 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             // Initial status
             expect(actionCode.status).toBe('pending');
 
+            // Create a proper serialized transaction
+            const transaction = new Transaction();
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction.feePayer = authorityKeypair.publicKey;
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+            
             // Attach transaction
-            const resolvedCode = protocol.attachTransaction(actionCode, 'transaction_data', 'payment');
+            const resolvedCode = protocol.attachTransaction(actionCode, serializedTx, authorityKeypair.publicKey.toBase58(), 'params', 'payment');
             expect(resolvedCode.status).toBe('resolved');
 
             // Finalize
