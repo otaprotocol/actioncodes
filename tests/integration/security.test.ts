@@ -6,6 +6,7 @@ import { Keypair, Transaction } from '@solana/web3.js';
 import * as nacl from 'tweetnacl';
 import { ProtocolMetaParser } from '../../src/meta';
 import { Buffer } from "buffer";
+import bs58 from 'bs58';
 
 describe('🔐 Action Codes Protocol Security Tests', () => {
     let protocol: ActionCodesProtocol;
@@ -32,7 +33,7 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
     function createRealSignature(keypair: Keypair, message: string): string {
         const messageBytes = new TextEncoder().encode(message);
         const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
-        return Buffer.from(signatureBytes).toString('base64');
+        return bs58.encode(signatureBytes);
     }
 
     /**

@@ -5,6 +5,7 @@ import { ProtocolMetaV1, ProtocolMetaParser } from '../../meta';
 import { PROTOCOL_PREFIX } from '../../constants';
 import { ActionCode, ActionCodeFields } from '../../actioncode';
 import { Buffer } from "buffer";
+import bs58 from 'bs58';
 
 describe('SolanaAdapter', () => {
   let adapter: SolanaAdapter;

@@ -5,7 +5,7 @@ import { Transaction, Keypair, VersionedTransaction, MessageV0 } from '@solana/w
 import { MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import * as nacl from 'tweetnacl';
 import { CodeGenerator } from '../../src/codegen';
-import { Buffer } from "buffer";
+import bs58 from 'bs58';
 
 /**
  * Helper function to create a real signature for testing
@@ -13,7 +13,7 @@ import { Buffer } from "buffer";
 function createRealSignature(keypair: Keypair, message: string): string {
     const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
-    return Buffer.from(signatureBytes).toString('base64');
+    return bs58.encode(signatureBytes);
 }
 
 /**

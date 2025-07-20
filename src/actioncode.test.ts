@@ -6,6 +6,7 @@ import { SolanaAdapter } from './adapters/solana/solana';
 import { Buffer } from "buffer";
 import { Keypair } from '@solana/web3.js';
 import * as nacl from 'tweetnacl';
+import bs58 from 'bs58';
 
 describe('ActionCode', () => {
     const testPubkey = '9sbZg6E3HbMdzEDXUGvXTo7WTxEfNMPkRjJ3xCTpSFLW';
@@ -412,7 +413,7 @@ describe('ActionCode', () => {
             const message = solanaAdapter.getCodeSignatureMessage(code, timestamp, 'DEFAULT');
             const messageBytes = new TextEncoder().encode(message);
             const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
-            const signature = Buffer.from(signatureBytes).toString('base64');
+            const signature = bs58.encode(signatureBytes);
 
             const actionCode = createTestActionCode({
                 code,

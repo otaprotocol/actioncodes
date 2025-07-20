@@ -13,6 +13,7 @@ import { BaseChainAdapter } from '../base';
 import * as nacl from 'tweetnacl';
 import { ActionCode } from '../../actioncode';
 import { Buffer } from "buffer";
+import bs58 from 'bs58';
 
 /**
  * Solana transaction type union
@@ -341,7 +342,7 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             const message = this.getCodeSignatureMessage(actionCode.code, actionCode.timestamp, actionCode.prefix);
             const messageBytes = new TextEncoder().encode(message);
             const pubkeyBytes = new PublicKey(actionCode.pubkey).toBytes();
-            const sigBytes = Buffer.from(actionCode.signature, 'base64');
+            const sigBytes = bs58.decode(actionCode.signature);
 
             return nacl.sign.detached.verify(messageBytes, sigBytes, pubkeyBytes);
         } catch (error) {
