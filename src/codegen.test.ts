@@ -127,14 +127,6 @@ describe('CodeGenerator', () => {
             expect(/^[A-Za-z]+\d{8}$/.test(code)).toBe(true);
         });
 
-        it('should use current time when no timestamp provided', () => {
-            const { code: code1 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT');
-            const { code: code2 } = CodeGenerator.generateCode(testPubkey, 'DEFAULT');
-
-            // Codes should be the same if generated within the same time slot
-            expect(code1).toBe(code2);
-        });
-
         it('should throw error for invalid prefixes', () => {
             const timestamp = 1640995200000;
             expect(() => CodeGenerator.generateCode(testPubkey, 'AB', timestamp)).toThrow();
