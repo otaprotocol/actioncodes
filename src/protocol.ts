@@ -125,15 +125,15 @@ export class ActionCodesProtocol {
         }
 
         const ts = timestamp || Date.now();
-        const { code, issuedAt, expiresAt } = CodeGenerator.generateCode(pubkey, prefix, ts);
-        const message = adapter.getCodeSignatureMessage(code, issuedAt, prefix);
+        const { code, expiresAt } = CodeGenerator.generateCode(pubkey, prefix, ts);
+        const message = adapter.getCodeSignatureMessage(code, ts, prefix);
         const signature = await signFn(message);
 
         const actionCode = ActionCode.fromPayload({
             code,
             pubkey,
             signature,
-            timestamp: issuedAt,
+            timestamp: ts,
             expiresAt,
             prefix,
             chain,
