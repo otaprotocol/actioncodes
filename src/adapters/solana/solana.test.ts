@@ -1724,4 +1724,267 @@ describe('SolanaAdapter', () => {
       });
     });
   });
+
+  describe('verifyFinalizedTransaction', () => {
+    const userKey = Keypair.generate();
+    it('should verify valid finalized legacy transaction', () => {
+      // Create real action code with proper codeHash
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      // Create protocol meta with the correct id (codeHash), initiator, and issuer
+      const metaWithCorrectId = {
+        ...testMeta,
+        id: actionCode.codeHash, // Use real codeHash as id
+        initiator: actionCode.pubkey, // Use action code pubkey as initiator
+        iss: actionCode.pubkey // Use action code pubkey as issuer (since userKey signs the transaction)
+      };
+
+      // Create a transaction with protocol meta
+      const metaString = ProtocolMetaParser.serialize(metaWithCorrectId);
+      const memoInstruction = createMemoInstruction(metaString);
+      const transaction = new Transaction();
+      transaction.add(memoInstruction);
+      transaction.feePayer = userKey.publicKey; // Set feePayer to userKey
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+
+      // Create mock transaction response
+      const mockTransactionResponse = {
+        transaction: {
+          message: transaction.compileMessage(),
+          signatures: ['signature1', 'signature2']
+        }
+      } as any;
+
+      transaction.sign(userKey);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(true);
+    });
+
+    it('should verify valid finalized versioned transaction', () => {
+      // Create real action code with proper codeHash
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      // Create protocol meta with the correct id (codeHash), initiator, and issuer
+      const metaWithCorrectId = {
+        ...testMeta,
+        id: actionCode.codeHash, // Use real codeHash as id
+        initiator: actionCode.pubkey, // Use action code pubkey as initiator
+        iss: actionCode.pubkey // Use action code pubkey as issuer (since userKey signs the transaction)
+      };
+
+      // Create a versioned transaction with protocol meta
+      const metaString = ProtocolMetaParser.serialize(metaWithCorrectId);
+      const memoInstruction = createMemoInstruction(metaString);
+
+      const messageV0 = new MessageV0({
+        header: {
+          numRequiredSignatures: 1,
+          numReadonlySignedAccounts: 0,
+          numReadonlyUnsignedAccounts: 1,
+        },
+        staticAccountKeys: [
+          userKey.publicKey, // Use userKey instead of authority1
+          memoInstruction.programId,
+        ],
+        recentBlockhash: '11111111111111111111111111111111',
+        compiledInstructions: [{
+          programIdIndex: 1,
+          accountKeyIndexes: [],
+          data: memoInstruction.data,
+        }],
+        addressTableLookups: [],
+      });
+
+      const versionedTransaction = new VersionedTransaction(messageV0);
+
+      // Create mock versioned transaction response
+      const mockVersionedTransactionResponse = {
+        transaction: {
+          message: versionedTransaction.message,
+          signatures: ['signature1']
+        }
+      } as any;
+
+      const result = adapter.verifyFinalizedTransaction(mockVersionedTransactionResponse, actionCode);
+      expect(result).toBe(true);
+    });
+
+    it('should reject transaction without protocol meta', () => {
+      // Create a transaction without protocol meta
+      const transaction = new Transaction();
+      transaction.feePayer = authority1.publicKey;
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+
+      // Create mock transaction response
+      const mockTransactionResponse = {
+        transaction: {
+          message: transaction.compileMessage(),
+          signatures: ['signature1']
+        }
+      } as any;
+
+      // Create real action code
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(false);
+    });
+
+    it('should reject transaction with mismatched prefix', () => {
+      // Create a transaction with different prefix
+      const metaWithDifferentPrefix = {
+        ...testMeta,
+        prefix: 'DIFFERENT_PREFIX'
+      };
+      const metaString = ProtocolMetaParser.serialize(metaWithDifferentPrefix);
+      const memoInstruction = createMemoInstruction(metaString);
+      const transaction = new Transaction();
+      transaction.add(memoInstruction);
+      transaction.feePayer = authority1.publicKey;
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+
+      // Create mock transaction response
+      const mockTransactionResponse = {
+        transaction: {
+          message: transaction.compileMessage(),
+          signatures: ['signature1']
+        }
+      } as any;
+
+      // Create real action code with different prefix
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT', // different from meta
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(false);
+    });
+
+    it('should reject transaction with mismatched initiator', () => {
+      // Create a transaction with different initiator
+      const metaWithDifferentInitiator = {
+        ...testMeta,
+        initiator: 'DIFFERENT_INITIATOR'
+      };
+      const metaString = ProtocolMetaParser.serialize(metaWithDifferentInitiator);
+      const memoInstruction = createMemoInstruction(metaString);
+      const transaction = new Transaction();
+      transaction.add(memoInstruction);
+      transaction.feePayer = authority1.publicKey;
+      transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+
+      // Create mock transaction response
+      const mockTransactionResponse = {
+        transaction: {
+          message: transaction.compileMessage(),
+          signatures: ['signature1']
+        }
+      } as any;
+
+      // Create real action code with different pubkey
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(), // different from meta.initiator
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(false);
+    });
+
+    it('should handle null transaction in response', () => {
+      // Create mock transaction response with null transaction
+      const mockTransactionResponse = {
+        transaction: null
+      } as any;
+
+      // Create real action code
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(false);
+    });
+
+    it('should handle invalid transaction data gracefully', () => {
+      // Create mock transaction response with invalid data
+      const mockTransactionResponse = {
+        transaction: {
+          message: 'invalid_message_data',
+          signatures: []
+        }
+      } as any;
+
+      // Create real action code
+      const actionCodeFields: ActionCodeFields = {
+        code: 'ABC12345',
+        prefix: 'DEFAULT',
+        pubkey: userKey.publicKey.toBase58(),
+        timestamp: 1753008513747,
+        signature: 'test-signature',
+        chain: 'solana',
+        status: 'finalized',
+        expiresAt: 1753008813747
+      };
+      const actionCode = new ActionCode(actionCodeFields);
+
+      const result = adapter.verifyFinalizedTransaction(mockTransactionResponse, actionCode);
+      expect(result).toBe(false);
+    });
+  });
+
 }); 

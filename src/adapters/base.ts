@@ -127,4 +127,11 @@ export abstract class BaseChainAdapter<T = any> {
         actionCode: ActionCode,
         key: any
     ): Promise<ActionCode>;
+
+    /**
+     * Verify the finalized transaction
+     * @param tx - The finalized transaction to verify
+     * @returns True if the transaction is valid
+     */
+    abstract verifyFinalizedTransaction(tx: any, actionCode: ActionCode): boolean;
 } 

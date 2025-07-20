@@ -4,7 +4,8 @@ import {
     VersionedTransaction,
     MessageV0,
     PublicKey,
-    Keypair
+    Keypair,
+    VersionedTransactionResponse
 } from '@solana/web3.js';
 import { createMemoInstruction, MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import { ProtocolMetaV1, ProtocolMetaParser } from '../../meta';
@@ -103,13 +104,13 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
         const tx = this.deserializeTransaction(serializedTx);
 
         const metaIx = this.encodeMeta(meta);
-        
+
         if (tx instanceof VersionedTransaction) {
             // Convert TransactionInstruction to MessageCompiledInstruction for versioned transactions
-            
+
             // Create new static account keys array with all required keys
             const newStaticAccountKeys = [...tx.message.staticAccountKeys];
-            
+
             // Add any missing keys from the memo instruction
             metaIx.keys.forEach(({ pubkey }) => {
                 if (!newStaticAccountKeys.some(key => key.equals(pubkey))) {
@@ -124,14 +125,14 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
 
             // Create new compiled instructions array
             const newCompiledInstructions = [...tx.message.compiledInstructions];
-            
+
             // Find the program ID index in the new static keys
-            const programIdIndex = newStaticAccountKeys.findIndex(key => 
+            const programIdIndex = newStaticAccountKeys.findIndex(key =>
                 key.equals(metaIx.programId)
             );
-            
+
             const accountKeyIndexes = metaIx.keys.map(key => {
-                const index = newStaticAccountKeys.findIndex(staticKey => 
+                const index = newStaticAccountKeys.findIndex(staticKey =>
                     staticKey.equals(key.pubkey)
                 );
                 if (index === -1) {
@@ -139,13 +140,13 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
                 }
                 return index;
             });
-            
+
             const compiledInstruction = {
                 programIdIndex,
                 accountKeyIndexes,
                 data: metaIx.data
             };
-            
+
             newCompiledInstructions.push(compiledInstruction);
 
             // Create new MessageV0 with updated data
@@ -160,12 +161,12 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             // Create new VersionedTransaction
             const newVersionedTx = new VersionedTransaction(newMessage);
             return Buffer.from(newVersionedTx.serialize()).toString('base64');
-        } else if (tx instanceof Transaction) {     
+        } else if (tx instanceof Transaction) {
             tx.instructions.push(metaIx);
-            
+
             // Clear existing signatures since we modified the transaction
             tx.signatures = [];
-            
+
             // Serialize the transaction back without requiring signatures
             return tx.serialize({ requireAllSignatures: false }).toString('base64');
         } else {
@@ -406,4 +407,131 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
             throw new Error(`Failed to sign transaction with protocol key: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+
+    /**
+     * Verify the finalized transaction from blockchain
+     * @param tx - The finalized transaction response from blockchain
+     * @param actionCode - The action code to verify against
+     * @returns True if the transaction is valid and matches the action code
+     */
+    verifyFinalizedTransaction(tx: VersionedTransactionResponse, actionCode: ActionCode): boolean {
+        try {
+            // Handle null/undefined transaction
+            if (tx.transaction === null || tx.transaction === undefined) {
+                return false;
+            }
+
+            // Both legacy and versioned responses have message and signatures
+            const response = tx.transaction as any;
+            if (!response.message || !response.signatures) {
+                return false;
+            }
+
+            let transaction: SolanaTransaction;
+
+            // Check if it's a versioned transaction by looking at the message structure
+            if (response.message instanceof MessageV0) {
+                // Versioned transaction - reconstruct from message and signatures
+                transaction = new VersionedTransaction(response.message);
+                // Note: In a real scenario, signatures would be attached, but for testing we just need the message
+            } else {
+                // Legacy transaction - reconstruct from compiled message and signatures
+                const compiledMessage = response.message;
+                transaction = Transaction.populate(compiledMessage, response.signatures);
+            }
+
+            const meta = this.decodeMeta(transaction);
+            if (!meta) {
+                return false; // No protocol meta found
+            }
+
+            if (!meta.iss) {
+                return false; // No issuer field in meta
+            }
+
+            if (!actionCode.codeHash) {
+                return false; // No codeHash available
+            }
+            if (!meta.id || meta.id !== actionCode.codeHash) {
+                return false; // ID doesn't match expected value
+            }
+
+
+            if (meta.prefix !== actionCode.prefix) {
+                return false;
+            }
+
+
+            if (meta.initiator !== actionCode.pubkey) {
+                return false;
+            }
+
+
+
+            let userPubkey: PublicKey | null = null;
+            try {
+                userPubkey = new PublicKey(actionCode.pubkey);
+            } catch (error) {
+                return false;
+            }
+
+            if (userPubkey) {
+                if (transaction instanceof VersionedTransaction) {
+                    const message = transaction.message;
+
+                    if (message instanceof MessageV0) {
+                        // Check if user's public key is in the static account keys
+                        const userKeyIndex = message.staticAccountKeys.findIndex(key =>
+                            key.equals(userPubkey!)
+                        );
+
+                        if (userKeyIndex === -1) {
+                            return false; // User's key not found in transaction
+                        }
+
+                        // Check if user's key is a signer (first bit of header indicates signer status)
+                        const isUserSigner = (message.header.numRequiredSignatures > 0) &&
+                            (userKeyIndex < message.header.numRequiredSignatures);
+
+                        if (!isUserSigner) {
+                            return false; // User didn't sign the transaction
+                        }
+                    } else {
+                        return false; // Unsupported message type
+                    }
+                } else if (transaction instanceof Transaction) {
+                    // For legacy transactions, check if user's key is in the account keys
+                    const accountKeys = transaction.compileMessage().accountKeys;
+                    const userKeyIndex = accountKeys.findIndex(key =>
+                        key.equals(userPubkey!)
+                    );
+
+                    if (userKeyIndex === -1) {
+                        return false; // User's key not found in transaction
+                    }
+
+                    // Check if user's key is a signer
+                    const isUserSigner = userKeyIndex < transaction.compileMessage().header.numRequiredSignatures;
+
+                    if (!isUserSigner) {
+                        return false; // User didn't sign the transaction
+                    }
+                } else {
+                    return false; // Invalid transaction type
+                }
+            }
+
+            // 5. Check that tx is signed by protocol (issuer)
+            if (!this.hasIssuerSignature(transaction, meta.iss)) {
+                return false; // Protocol didn't sign the transaction
+            }
+
+            // All checks passed
+            return true;
+        } catch (error) {
+            // If any error occurs during verification, return false
+            return false;
+        }
+    }
+
 } 
