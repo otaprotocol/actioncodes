@@ -1040,7 +1040,7 @@ describe('SolanaAdapter', () => {
       transaction.feePayer = keypair.publicKey;
 
       // Create action code with transaction
-      actionCode = {
+      actionCode = ActionCode.fromPayload({
         code: 'ABC12345',
         prefix: 'DEFAULT',
         pubkey: keypair.publicKey.toBase58(),
@@ -1051,8 +1051,8 @@ describe('SolanaAdapter', () => {
           transaction: Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64')
         },
         expiresAt: Date.now() + 300000, // 5 minutes from now
-        status: 'pending' as const
-      };
+        status: 'pending'
+      });
     });
 
     it('should successfully sign a valid action code with protocol key', async () => {
@@ -1061,7 +1061,7 @@ describe('SolanaAdapter', () => {
       expect(result).toBeDefined();
       expect(result.transaction).toBeDefined();
       expect(result.transaction?.transaction).toBeDefined();
-      expect(result.transaction?.transaction).not.toBe(actionCode.transaction.transaction);
+      expect(result.transaction?.transaction).not.toBe(actionCode.transaction?.transaction);
 
       // Verify the transaction was actually signed
       const signedTx = Transaction.from(Buffer.from(result.transaction!.transaction!, 'base64'));
@@ -1069,17 +1069,17 @@ describe('SolanaAdapter', () => {
     });
 
     it('should throw error when action code has no transaction', async () => {
-      const actionCodeWithoutTx = { ...actionCode, transaction: undefined };
+      const actionCodeWithoutTx = ActionCode.fromPayload({ ...actionCode.json, transaction: undefined });
 
       await expect(adapter.signWithProtocolKey(actionCodeWithoutTx, keypair))
         .rejects.toThrow('No transaction found');
     });
 
     it('should throw error when action code transaction is missing transaction data', async () => {
-      const actionCodeWithInvalidTx = {
-        ...actionCode,
+      const actionCodeWithInvalidTx = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: { transaction: undefined }
-      };
+      });
 
       await expect(adapter.signWithProtocolKey(actionCodeWithInvalidTx, keypair))
         .rejects.toThrow('No transaction found');
@@ -1091,12 +1091,12 @@ describe('SolanaAdapter', () => {
       txWithoutMeta.recentBlockhash = Keypair.generate().publicKey.toBase58();
       txWithoutMeta.feePayer = keypair.publicKey;
 
-      const actionCodeWithoutMeta = {
-        ...actionCode,
+      const actionCodeWithoutMeta = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: Buffer.from(txWithoutMeta.serialize({ requireAllSignatures: false })).toString('base64')
         }
-      };
+      });
 
       await expect(adapter.signWithProtocolKey(actionCodeWithoutMeta, keypair))
         .rejects.toThrow('Invalid transaction, protocol meta not found');
@@ -1126,28 +1126,28 @@ describe('SolanaAdapter', () => {
       expect(result.status).toBe(actionCode.status);
 
       // Only transaction should be different
-      expect(result.transaction?.transaction).not.toBe(actionCode.transaction.transaction);
+      expect(result.transaction?.transaction).not.toBe(actionCode.transaction?.transaction);
     });
 
     it('should handle invalid base64 transaction data', async () => {
-      const actionCodeWithInvalidBase64 = {
-        ...actionCode,
+      const actionCodeWithInvalidBase64 = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: 'invalid-base64-data'
         }
-      };
+      });
 
       await expect(adapter.signWithProtocolKey(actionCodeWithInvalidBase64, keypair))
         .rejects.toThrow('Failed to sign transaction with protocol key');
     });
 
     it('should handle corrupted transaction data', async () => {
-      const actionCodeWithCorruptedTx = {
-        ...actionCode,
+      const actionCodeWithCorruptedTx = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: Buffer.from('corrupted-transaction-data').toString('base64')
         }
-      };
+      });
 
       await expect(adapter.signWithProtocolKey(actionCodeWithCorruptedTx, keypair))
         .rejects.toThrow('Failed to sign transaction with protocol key');
@@ -1168,17 +1168,18 @@ describe('SolanaAdapter', () => {
       newTransaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
       newTransaction.feePayer = differentKeypair.publicKey;
 
-      const updatedActionCode = {
-        ...actionCode,
+      const updatedActionCode = ActionCode.fromPayload({
+        ...actionCode.json,
+        pubkey: differentKeypair.publicKey.toBase58(),
         transaction: {
           transaction: Buffer.from(newTransaction.serialize({ requireAllSignatures: false })).toString('base64')
         }
-      };
+      });
 
       const result = await adapter.signWithProtocolKey(updatedActionCode, differentKeypair);
 
       expect(result).toBeDefined();
-      expect(result.transaction?.transaction).not.toBe(updatedActionCode.transaction.transaction);
+      expect(result.transaction?.transaction).not.toBe(updatedActionCode.transaction?.transaction);
     });
 
     it('should handle transactions with multiple instructions', async () => {
@@ -1193,17 +1194,17 @@ describe('SolanaAdapter', () => {
       multiInstructionTx.recentBlockhash = Keypair.generate().publicKey.toBase58();
       multiInstructionTx.feePayer = keypair.publicKey;
 
-      const actionCodeWithMultiTx = {
-        ...actionCode,
+      const actionCodeWithMultiTx = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: Buffer.from(multiInstructionTx.serialize({ requireAllSignatures: false })).toString('base64')
         }
-      };
+      });
 
       const result = await adapter.signWithProtocolKey(actionCodeWithMultiTx, keypair);
 
       expect(result).toBeDefined();
-      expect(result.transaction?.transaction).not.toBe(actionCodeWithMultiTx.transaction.transaction);
+      expect(result.transaction?.transaction).not.toBe(actionCodeWithMultiTx.transaction?.transaction);
     });
 
     it('should maintain transaction structure after signing', async () => {
@@ -1237,19 +1238,19 @@ describe('SolanaAdapter', () => {
       const transactionWithMeta = adapter.injectMeta(serializedTx, metaWithMatchingIssuer);
 
       // Create action code with the transaction that has injected meta
-      const actionCodeWithInjectedMeta = {
-        ...actionCode,
+      const actionCodeWithInjectedMeta = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: transactionWithMeta
         }
-      };
+      });
 
       // Sign the transaction with protocol key
       const result = await adapter.signWithProtocolKey(actionCodeWithInjectedMeta, keypair);
 
       // Verify the result
       expect(result).toBeDefined();
-      expect(result.transaction?.transaction).not.toBe(actionCodeWithInjectedMeta.transaction.transaction);
+      expect(result.transaction?.transaction).not.toBe(actionCodeWithInjectedMeta.transaction?.transaction);
 
       // Verify the signed transaction can be deserialized
       const signedTx = Transaction.from(Buffer.from(result.transaction?.transaction!, 'base64'));
@@ -1297,12 +1298,12 @@ describe('SolanaAdapter', () => {
       const versionedTransactionWithMeta = adapter.injectMeta(serializedTx, metaWithMatchingIssuer);
 
       // Create action code with the versioned transaction that has injected meta
-      const actionCodeWithVersionedTx = {
-        ...actionCode,
+      const actionCodeWithVersionedTx = ActionCode.fromPayload({
+        ...actionCode.json,
         transaction: {
           transaction: versionedTransactionWithMeta
         }
-      };
+      });
 
       // Note: signWithProtocolKey currently only works with legacy transactions
       // This test demonstrates that the injected meta can be decoded from versioned transactions

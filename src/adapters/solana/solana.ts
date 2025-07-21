@@ -396,14 +396,17 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
                 throw new Error('Invalid transaction type');
             }
 
-            const newActionCode = Object.assign({}, actionCode, {
-                transaction: {
-                    ...actionCode.transaction,
-                    transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
-                }
-            });
+            const updatedTransaction = {
+                ...actionCode.transaction,
+                transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
+            };
 
-            return newActionCode;
+            const updatedFields = {
+                ...actionCode.json,
+                transaction: updatedTransaction,
+            };
+
+            return ActionCode.fromPayload(updatedFields);
         } catch (error) {
             throw new Error(`Failed to sign transaction with protocol key: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
