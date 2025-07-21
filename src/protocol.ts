@@ -79,23 +79,28 @@ export class ActionCodesProtocol {
     }
 
     /**
-     * Validate an action code
+     * Validate an action code, checking intent type and required fields
      * @param actionCode - ActionCode to validate
      * @returns True if valid
      */
     validateActionCode(actionCode: ActionCode): boolean {
         const chain = actionCode.chain;
-
         if (!this.isChainSupported(chain)) {
             return false;
         }
-
-        // Basic validation - check if expired
         if (actionCode.expired) {
             return false;
         }
+        const tx = actionCode.transaction;
+        const adapter = this.getChainAdapter(chain);
 
-        // Chain-specific validation would be done when attaching transactions
+        // Only require transaction/message for resolved/finalized
+        if (actionCode.intentType === 'transaction') {
+            if ((actionCode.status === 'resolved' || actionCode.status === 'finalized') && (!tx || !tx.transaction)) return false;
+        } else if (actionCode.intentType === 'sign-only') {
+            if ((actionCode.status === 'resolved' || actionCode.status === 'finalized') && (!tx || !tx.message)) return false;
+            if (actionCode.status === 'finalized' && (!tx || !tx.signedMessage || !adapter || !adapter.validateSignedMessage(tx.message || '', tx.signedMessage, actionCode.pubkey))) return false;
+        }
         return true;
     }
 
@@ -211,34 +216,91 @@ export class ActionCodesProtocol {
     }
 
     /**
-     * Finalize an action code with transaction signature
+     * Attach a message to an action code (sign-only mode, resolved state)
+     * @param actionCode - ActionCode to attach message to
+     * @param message - The message that will be signed
+     * @param params - Optional parameters for protocol meta
+     * @param messageType - Optional message type
+     * @returns Updated ActionCode with transaction containing message
+     */
+    attachMessage(
+        actionCode: ActionCode,
+        message: string,
+        params?: string,
+        messageType?: string
+    ): ActionCode {
+        const chain = actionCode.chain;
+        if (!this.isChainSupported(chain)) {
+            throw new Error(`Chain '${chain}' is not supported`);
+        }
+        const adapter = this.getChainAdapter(chain);
+        if (!adapter) {
+            throw new Error(`No adapter found for chain '${chain}'`);
+        }
+        const updatedFields = {
+            ...actionCode.json,
+            transaction: {
+                ...actionCode.transaction,
+                message,
+                txType: messageType,
+                intentType: 'sign-only' as 'sign-only'
+            },
+            status: 'resolved' as ActionCodeStatus,
+            metadata: params ? { params: JSON.parse(params) } : undefined
+        };
+        const updatedActionCode = ActionCode.fromPayload(updatedFields);
+        if (!this.validateActionCode(updatedActionCode)) {
+            throw new Error('Invalid action code after attaching message');
+        }
+        return updatedActionCode;
+    }
+
+    /**
+     * Finalize an action code based on its intent type
      * @param actionCode - ActionCode to finalize
-     * @param txSignature - Transaction signature
+     * @param signature - Transaction signature (for transaction intent) or signed message (for sign-only intent)
      * @returns Updated ActionCode
      */
     finalizeActionCode(
         actionCode: ActionCode,
-        txSignature: string
+        signature: string
     ): ActionCode {
         const currentTransaction = actionCode.transaction;
         if (!currentTransaction) {
             throw new Error('Cannot finalize ActionCode without attached transaction');
         }
-
-        // Update transaction with signature
-        const updatedTransaction: ActionCodeTransaction = {
-            ...currentTransaction,
-            txSignature
-        };
-
-        // Update ActionCode
-        const updatedFields = {
-            ...actionCode.json,
-            transaction: updatedTransaction,
-            status: 'finalized' as ActionCodeStatus
-        };
-
-        return ActionCode.fromPayload(updatedFields);
+        if (actionCode.intentType === 'transaction') {
+            // Transaction intent: require txSignature
+            const updatedTransaction: ActionCodeTransaction = {
+                ...currentTransaction,
+                txSignature: signature,
+                intentType: 'transaction'
+            };
+            const updatedFields = {
+                ...actionCode.json,
+                transaction: updatedTransaction,
+                status: 'finalized' as ActionCodeStatus
+            };
+            return ActionCode.fromPayload(updatedFields);
+        } else if (actionCode.intentType === 'sign-only') {
+            // Sign-only intent: require signedMessage
+            if (!currentTransaction.signedMessage && !signature) {
+                throw new Error('Cannot finalize sign-only ActionCode without signed message');
+            }
+            const updatedTransaction: ActionCodeTransaction = {
+                ...currentTransaction,
+                signedMessage: signature,
+                intentType: 'sign-only'
+            };
+            const updatedFields = {
+                ...actionCode.json,
+                transaction: updatedTransaction,
+                status: 'finalized' as ActionCodeStatus
+            };
+            return ActionCode.fromPayload(updatedFields);
+        } else {
+            throw new Error('Unknown intent type for ActionCode finalization');
+        }
     }
 
     /**

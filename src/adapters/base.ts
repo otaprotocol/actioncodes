@@ -134,4 +134,6 @@ export abstract class BaseChainAdapter<T = any> {
      * @returns True if the transaction is valid
      */
     abstract verifyFinalizedTransaction(tx: any, actionCode: ActionCode): boolean;
+
+    abstract validateSignedMessage(message: string, signedMessage: string, pubkey: string): boolean;
 } 

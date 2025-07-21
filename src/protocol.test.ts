@@ -4,6 +4,9 @@ import { ActionCode } from './actioncode';
 import { BaseChainAdapter } from './adapters/base';
 import { SolanaAdapter } from './adapters/solana';
 import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import { Buffer } from 'buffer';
 
 // Mock chain adapter for testing
 class MockChainAdapter extends BaseChainAdapter<any> {
@@ -39,6 +42,14 @@ class MockChainAdapter extends BaseChainAdapter<any> {
 
     signWithProtocolKey(actionCode: ActionCode, key: Keypair): Promise<ActionCode> {
         return Promise.resolve(actionCode);
+    }
+
+    verifyFinalizedTransaction(actionCode: ActionCode): boolean {
+        return true; // Mock finalized transaction verification
+    }
+
+    validateSignedMessage(message: string, signedMessage: string, pubkey: string): boolean {
+        return true;
     }
 }
 
@@ -471,4 +482,60 @@ describe('ActionCodesProtocol', () => {
             }).toThrow('Chain \'unsupported\' is not supported');
         });
     });
+}); 
+
+describe('Sign-Only Management', () => {
+  it('should handle sign-only action code lifecycle', async () => {
+    const protocol = ActionCodesProtocol.create();
+    const solanaAdapter = new SolanaAdapter();
+    protocol.registerAdapter(solanaAdapter);
+
+    const keypair = Keypair.generate();
+    const pubkey = keypair.publicKey.toBase58();
+
+    // 1. Create action code (pending)
+    const signFn = jest.fn().mockResolvedValue('test_signature');
+    jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(true);
+    const actionCode = await protocol.createActionCode(pubkey, signFn, 'solana');
+
+    // 2. Attach message (resolved)
+    const message = 'Sign this message for access';
+    const resolvedCode = protocol.attachMessage(actionCode, message);
+
+    expect(resolvedCode.transaction?.message).toBe(message);
+    expect(resolvedCode.status).toBe('resolved');
+
+    // 3. Finalize with valid signature (finalized)
+    const messageBytes = Buffer.from(message, 'utf8');
+    const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+    const signature = bs58.encode(signatureBytes);
+
+    const finalizedCode = protocol.finalizeActionCode(resolvedCode, signature);
+
+    expect(finalizedCode.transaction?.signedMessage).toBe(signature);
+    expect(finalizedCode.status).toBe('finalized');
+    expect(protocol.validateActionCode(finalizedCode)).toBe(true);
+  });
+
+  it('should fail validation with invalid signature', async () => {
+    const protocol = ActionCodesProtocol.create();
+    const solanaAdapter = new SolanaAdapter();
+    protocol.registerAdapter(solanaAdapter);
+
+    const keypair = Keypair.generate();
+    const pubkey = keypair.publicKey.toBase58();
+
+    const signFn = jest.fn().mockResolvedValue('test_signature');
+    jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(true);
+    const actionCode = await protocol.createActionCode(pubkey, signFn, 'solana');
+
+    const message = 'Sign this message for access';
+    const resolvedCode = protocol.attachMessage(actionCode, message);
+
+    // Use a random signature
+    const invalidSignature = bs58.encode(nacl.sign.detached(Buffer.from('other message'), keypair.secretKey));
+    const finalizedCode = protocol.finalizeActionCode(resolvedCode, invalidSignature);
+
+    expect(protocol.validateActionCode(finalizedCode)).toBe(false);
+  });
 }); 

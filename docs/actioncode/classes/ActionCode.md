@@ -6,7 +6,7 @@
 
 # Class: ActionCode
 
-Defined in: [actioncode.ts:32](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L32)
+Defined in: [actioncode.ts:35](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L35)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [actioncode.ts:32](https://github.com/otaprotocol/actioncodes/blob/a
 
 > **new ActionCode**(`fields`): `ActionCode`
 
-Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L33)
+Defined in: [actioncode.ts:36](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L36)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [actioncode.ts:33](https://github.com/otaprotocol/actioncodes/blob/a
 
 > **get** **chain**(): `string`
 
-Defined in: [actioncode.ts:95](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L95)
+Defined in: [actioncode.ts:98](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L98)
 
 Get the target chain for this action code
 
@@ -52,7 +52,7 @@ Chain identifier (e.g., "solana", "evm")
 
 > **get** **code**(): `string`
 
-Defined in: [actioncode.ts:111](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L111)
+Defined in: [actioncode.ts:114](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L114)
 
 Get the action code string
 
@@ -70,7 +70,7 @@ The 8-character action code
 
 > **get** **codeHash**(): `string`
 
-Defined in: [actioncode.ts:217](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L217)
+Defined in: [actioncode.ts:220](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L220)
 
 Get the code hash for this action code
 it is also used in the protocol meta as the code id
@@ -89,7 +89,7 @@ Code hash string
 
 > **get** **description**(): `undefined` \| `string`
 
-Defined in: [actioncode.ts:151](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L151)
+Defined in: [actioncode.ts:154](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L154)
 
 Get a human-readable description of the action
 
@@ -107,7 +107,7 @@ Description string or undefined
 
 > **get** **displayString**(): `string`
 
-Defined in: [actioncode.ts:183](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L183)
+Defined in: [actioncode.ts:186](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L186)
 
 Get a human-readable display string for the action code
 
@@ -125,7 +125,7 @@ Formatted display string
 
 > **get** **encoded**(): `string`
 
-Defined in: [actioncode.ts:47](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L47)
+Defined in: [actioncode.ts:50](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L50)
 
 ##### Returns
 
@@ -139,7 +139,7 @@ Defined in: [actioncode.ts:47](https://github.com/otaprotocol/actioncodes/blob/a
 
 > **get** **expired**(): `boolean`
 
-Defined in: [actioncode.ts:87](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L87)
+Defined in: [actioncode.ts:90](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L90)
 
 Check if the action code has expired
 
@@ -151,13 +151,27 @@ True if the code has expired
 
 ***
 
+### intentType
+
+#### Get Signature
+
+> **get** **intentType**(): `"transaction"` \| `"sign-only"`
+
+Defined in: [actioncode.ts:224](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L224)
+
+##### Returns
+
+`"transaction"` \| `"sign-only"`
+
+***
+
 ### json
 
 #### Get Signature
 
 > **get** **json**(): [`ActionCodeFields`](../interfaces/ActionCodeFields.md)
 
-Defined in: [actioncode.ts:68](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L68)
+Defined in: [actioncode.ts:71](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L71)
 
 ##### Returns
 
@@ -171,7 +185,7 @@ Defined in: [actioncode.ts:68](https://github.com/otaprotocol/actioncodes/blob/a
 
 > **get** **metadata**(): `undefined` \| [`ActionCodeMetadata`](../interfaces/ActionCodeMetadata.md)
 
-Defined in: [actioncode.ts:143](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L143)
+Defined in: [actioncode.ts:146](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L146)
 
 Get metadata associated with this action code
 
@@ -189,7 +203,7 @@ Metadata object or undefined
 
 > **get** **params**(): `undefined` \| `Record`\<`string`, `any`\>
 
-Defined in: [actioncode.ts:159](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L159)
+Defined in: [actioncode.ts:162](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L162)
 
 Get parameters associated with this action
 
@@ -207,7 +221,7 @@ Parameters object or undefined
 
 > **get** **prefix**(): `string`
 
-Defined in: [actioncode.ts:119](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L119)
+Defined in: [actioncode.ts:122](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L122)
 
 Get the prefix used for this action code
 
@@ -225,7 +239,7 @@ Normalized prefix
 
 > **get** **pubkey**(): `string`
 
-Defined in: [actioncode.ts:127](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L127)
+Defined in: [actioncode.ts:130](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L130)
 
 Get the user's public key
 
@@ -243,7 +257,7 @@ User's public key
 
 > **get** **remainingTime**(): `number`
 
-Defined in: [actioncode.ts:78](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L78)
+Defined in: [actioncode.ts:81](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L81)
 
 Get remaining time in milliseconds until expiration
 
@@ -261,7 +275,7 @@ Remaining time in milliseconds, or 0 if expired
 
 > **get** **remainingTimeString**(): `string`
 
-Defined in: [actioncode.ts:196](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L196)
+Defined in: [actioncode.ts:199](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L199)
 
 Get a formatted time string showing remaining time
 
@@ -279,7 +293,7 @@ Human-readable time string (e.g., "1m 30s remaining")
 
 > **get** **signature**(): `string`
 
-Defined in: [actioncode.ts:175](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L175)
+Defined in: [actioncode.ts:178](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L178)
 
 Get the user's signature
 
@@ -297,7 +311,7 @@ User's signature string
 
 > **get** **status**(): [`ActionCodeStatus`](../type-aliases/ActionCodeStatus.md)
 
-Defined in: [actioncode.ts:103](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L103)
+Defined in: [actioncode.ts:106](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L106)
 
 Get the current status of the action code
 
@@ -315,7 +329,7 @@ Current status
 
 > **get** **timestamp**(): `number`
 
-Defined in: [actioncode.ts:167](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L167)
+Defined in: [actioncode.ts:170](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L170)
 
 Get the timestamp when the code was generated
 
@@ -333,7 +347,7 @@ Timestamp in milliseconds
 
 > **get** **transaction**(): `undefined` \| [`ActionCodeTransaction`](../interfaces/ActionCodeTransaction.md)
 
-Defined in: [actioncode.ts:135](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L135)
+Defined in: [actioncode.ts:138](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L138)
 
 Get the transaction data (chain-specific)
 
@@ -349,7 +363,7 @@ Transaction data or undefined
 
 > **isValid**(`protocol`): `boolean`
 
-Defined in: [actioncode.ts:51](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L51)
+Defined in: [actioncode.ts:54](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L54)
 
 #### Parameters
 
@@ -367,7 +381,7 @@ Defined in: [actioncode.ts:51](https://github.com/otaprotocol/actioncodes/blob/a
 
 > `static` **fromEncoded**(`encoded`): `ActionCode`
 
-Defined in: [actioncode.ts:42](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L42)
+Defined in: [actioncode.ts:45](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L45)
 
 #### Parameters
 
@@ -385,7 +399,7 @@ Defined in: [actioncode.ts:42](https://github.com/otaprotocol/actioncodes/blob/a
 
 > `static` **fromPayload**(`input`): `ActionCode`
 
-Defined in: [actioncode.ts:35](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L35)
+Defined in: [actioncode.ts:38](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L38)
 
 #### Parameters
 

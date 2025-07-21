@@ -6,7 +6,7 @@
 
 # Interface: ActionCodeMetadata
 
-Defined in: [actioncode.ts:8](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L8)
+Defined in: [actioncode.ts:8](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L8)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [actioncode.ts:8](https://github.com/otaprotocol/actioncodes/blob/a8
 
 > `optional` **description**: `string`
 
-Defined in: [actioncode.ts:9](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L9)
+Defined in: [actioncode.ts:9](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L9)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [actioncode.ts:9](https://github.com/otaprotocol/actioncodes/blob/a8
 
 > `optional` **params**: `Record`\<`string`, `any`\>
 
-Defined in: [actioncode.ts:10](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/actioncode.ts#L10)
+Defined in: [actioncode.ts:10](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/actioncode.ts#L10)

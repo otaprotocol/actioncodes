@@ -65,6 +65,7 @@ describe('🔐 Action Codes Protocol Security Tests', () => {
             ts
         );
 
+        // Do NOT attach a transaction here. Attach it in tests as needed.
         return { actionCode, signature };
     }
 

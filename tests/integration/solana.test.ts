@@ -6,6 +6,7 @@ import { MEMO_PROGRAM_ID } from '@solana/spl-memo';
 import * as nacl from 'tweetnacl';
 import { CodeGenerator } from '../../src/codegen';
 import bs58 from 'bs58';
+import { Buffer } from 'buffer';
 
 /**
  * Helper function to create a real signature for testing
@@ -246,7 +247,7 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
         it('should maintain data integrity through encode/decode cycle', async () => {
             // Generate action code
             const { signature, timestamp } = generateValidSignature(userKeypair, userKeypair.publicKey.toBase58(), 'CUSTOM');
-            const actionCode = await protocol.createActionCode(
+            let actionCode = await protocol.createActionCode(
                 userKeypair.publicKey.toBase58(),
                 async () => signature,
                 'solana',
@@ -254,7 +255,22 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
                 timestamp
             );
 
-            // Create protocol meta
+            // Attach a valid transaction to the action code
+            const meta = protocol.createProtocolMeta(
+                actionCode,
+                authorityKeypair.publicKey.toBase58(),
+                'test_params'
+            );
+            const memoInstruction = protocol.encodeProtocolMeta(meta, 'solana');
+            const transaction = new Transaction();
+            transaction.add(memoInstruction);
+            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction.feePayer = authorityKeypair.publicKey;
+            transaction.sign(authorityKeypair);
+            const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+            actionCode = protocol.attachTransaction(actionCode, serializedTx, authorityKeypair.publicKey.toBase58(), 'test_params', 'payment');
+
+            // Create protocol meta (again, for round-trip)
             const originalMeta = protocol.createProtocolMeta(
                 actionCode,
                 authorityKeypair.publicKey.toBase58(),
@@ -262,17 +278,17 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             );
 
             // Encode using protocol to get instruction
-            const memoInstruction = protocol.encodeProtocolMeta(originalMeta, 'solana');
+            const memoInstruction2 = protocol.encodeProtocolMeta(originalMeta, 'solana');
 
             // Create a proper transaction with the instruction
-            const transaction = new Transaction();
-            transaction.add(memoInstruction);
-            transaction.recentBlockhash = Keypair.generate().publicKey.toBase58();
-            transaction.feePayer = authorityKeypair.publicKey;
-            transaction.sign(authorityKeypair);
+            const transaction2 = new Transaction();
+            transaction2.add(memoInstruction2);
+            transaction2.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            transaction2.feePayer = authorityKeypair.publicKey;
+            transaction2.sign(authorityKeypair);
 
             // Decode using protocol
-            const decoded = protocol.decodeProtocolMeta(transaction, 'solana');
+            const decoded = protocol.decodeProtocolMeta(transaction2, 'solana');
 
             // Verify round-trip integrity
             expect(decoded).toEqual(originalMeta);
@@ -307,5 +323,42 @@ describe('Solana Integration Tests - Real Protocol Usage', () => {
             const decodedMeta = solanaAdapter.decodeFromBase64(serialized);
             expect(decodedMeta).toEqual(meta);
         });
+    });
+});
+
+describe('Sign-Only Integration', () => {
+    it('should handle sign-only message signing lifecycle with Solana keypair', async () => {
+        // 1. Setup
+        const protocol = ActionCodesProtocol.create();
+        const solanaAdapter = new SolanaAdapter();
+        protocol.registerAdapter(solanaAdapter);
+        const keypair = Keypair.generate();
+        const pubkey = keypair.publicKey.toBase58();
+
+        // 2. Create action code (pending)
+        const signFn = jest.fn().mockResolvedValue('test_signature');
+        jest.spyOn(solanaAdapter, 'verifyCodeSignature').mockReturnValue(true);
+        const actionCode = await protocol.createActionCode(pubkey, signFn, 'solana');
+
+        // 3. Attach message (resolved)
+        const message = 'Sign this message for Solana integration test';
+        const resolvedCode = protocol.attachMessage(actionCode, message);
+        expect(resolvedCode.transaction?.message).toBe(message);
+        expect(resolvedCode.status).toBe('resolved');
+        expect(resolvedCode.transaction?.intentType).toBe('sign-only');
+
+        // 4. Finalize with valid signature (finalized)
+        const messageBytes = Buffer.from(message, 'utf8');
+        const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+        const signature = bs58.encode(signatureBytes);
+        const finalizedCode = protocol.finalizeActionCode(resolvedCode, signature);
+        expect(finalizedCode.transaction?.signedMessage).toBe(signature);
+        expect(finalizedCode.status).toBe('finalized');
+        expect(finalizedCode.transaction?.intentType).toBe('sign-only');
+
+        // 5. Validate the finalized action code
+        expect(protocol.validateActionCode(finalizedCode)).toBe(true);
+        // Check that the Solana adapter validates the signature
+        expect(solanaAdapter.validateSignedMessage(message, signature, pubkey)).toBe(true);
     });
 });

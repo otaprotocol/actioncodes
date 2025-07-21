@@ -8,4 +8,4 @@
 
 > `const` **MIN\_PREFIX\_LENGTH**: `3` = `3`
 
-Defined in: [constants.ts:6](https://github.com/otaprotocol/actioncodes/blob/a8b35c1388affc2365ea89beead5f92a97b38de7/src/constants.ts#L6)
+Defined in: [constants.ts:6](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/constants.ts#L6)

@@ -14,6 +14,9 @@ export interface ActionCodeTransaction {
     transaction?: string; // T = string for Solana (base64)
     txSignature?: string; // Solana signature
     txType?: string; // Transaction type for categorization
+    message?: string; // For sign-only mode: the message to be signed
+    signedMessage?: string; // For sign-only mode: the signed message or signature
+    intentType?: 'transaction' | 'sign-only'; // Explicit intent type
 }
 
 export interface ActionCodeFields {
@@ -216,5 +219,9 @@ export class ActionCode {
      */
     get codeHash(): string {
         return CodeGenerator.deriveCodeHash(this.fields.pubkey, this.fields.prefix, this.fields.timestamp);
+    }
+
+    get intentType(): 'transaction' | 'sign-only' {
+        return this.fields.transaction?.intentType || 'transaction';
     }
 }

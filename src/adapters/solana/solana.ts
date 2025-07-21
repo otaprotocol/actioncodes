@@ -538,4 +538,23 @@ export class SolanaAdapter extends BaseChainAdapter<SolanaTransaction> {
         }
     }
 
+    /**
+     * Validate a signed message for sign-only mode
+     * @param message - The message that was signed
+     * @param signedMessage - The signed message (base64 or hex)
+     * @param pubkey - The public key that should have signed the message
+     * @returns True if the signature is valid
+     */
+    validateSignedMessage(message: string, signedMessage: string, pubkey: string): boolean {
+        try {
+            // Decode the public key (base58)
+            const publicKeyBytes = bs58.decode(pubkey);
+            // Decode the signature as base58 (Solana convention)
+            const signature = bs58.decode(signedMessage);
+            const messageBuffer = Buffer.from(message, 'utf8');
+            return nacl.sign.detached.verify(messageBuffer, signature, publicKeyBytes);
+        } catch (e) {
+            return false;
+        }
+    }
 } 
