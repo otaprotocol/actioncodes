@@ -6,7 +6,7 @@
 
 # Class: `abstract` BaseChainAdapter\<T\>
 
-Defined in: [adapters/base.ts:9](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L9)
+Defined in: [adapters/base.ts:9](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L9)
 
 Base adapter class for chain-specific protocol meta operations
 
@@ -38,7 +38,7 @@ Chain-specific transaction type
 
 > `abstract` `readonly` **chain**: `string`
 
-Defined in: [adapters/base.ts:10](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L10)
+Defined in: [adapters/base.ts:10](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L10)
 
 ## Methods
 
@@ -46,7 +46,7 @@ Defined in: [adapters/base.ts:10](https://github.com/otaprotocol/actioncodes/blo
 
 > `abstract` **decodeMeta**(`tx`): `null` \| [`ProtocolMetaV1`](../../../meta/interfaces/ProtocolMetaV1.md)
 
-Defined in: [adapters/base.ts:24](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L24)
+Defined in: [adapters/base.ts:24](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L24)
 
 Decode protocol meta from chain-specific transaction
 
@@ -70,7 +70,7 @@ Decoded ProtocolMetaV1 or null
 
 > **detectTampering**(`tx`, `authorities`, `expectedPrefix`): `boolean`
 
-Defined in: [adapters/base.ts:58](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L58)
+Defined in: [adapters/base.ts:58](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L58)
 
 Detect tampered transactions by cross-checking metadata
 
@@ -106,7 +106,7 @@ True if transaction is valid and not tampered
 
 > `abstract` **encodeMeta**(`meta`): `any`
 
-Defined in: [adapters/base.ts:17](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L17)
+Defined in: [adapters/base.ts:17](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L17)
 
 Encode protocol meta for this chain
 
@@ -130,7 +130,7 @@ Chain-specific encoded data
 
 > **getCodeSignatureMessage**(`code`, `timestamp`, `prefix`): `string`
 
-Defined in: [adapters/base.ts:104](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L104)
+Defined in: [adapters/base.ts:104](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L104)
 
 Get the code signature message
 
@@ -166,7 +166,7 @@ The code signature message
 
 > `abstract` **hasIssuerSignature**(`tx`, `issuer`): `boolean`
 
-Defined in: [adapters/base.ts:49](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L49)
+Defined in: [adapters/base.ts:49](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L49)
 
 Check if the issuer has signed the transaction
 
@@ -196,7 +196,7 @@ True if issuer has signed
 
 > `abstract` **injectMeta**(`serializedTx`, `meta`): `string`
 
-Defined in: [adapters/base.ts:32](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L32)
+Defined in: [adapters/base.ts:32](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L32)
 
 Inject protocol meta into chain-specific transaction
 
@@ -226,7 +226,7 @@ Serialized transaction with injected meta
 
 > `abstract` **signWithProtocolKey**(`actionCode`, `key`): `Promise`\<[`ActionCode`](../../../actioncode/classes/ActionCode.md)\>
 
-Defined in: [adapters/base.ts:126](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L126)
+Defined in: [adapters/base.ts:126](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L126)
 
 Sign the transaction with the protocol key using a callback approach
 This method should be implemented by each chain-specific adapter to handle
@@ -254,7 +254,7 @@ Promise that resolves to the signed transaction
 
 > `abstract` **validate**(`tx`, `authorities`, `expectedPrefix?`): `boolean`
 
-Defined in: [adapters/base.ts:41](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L41)
+Defined in: [adapters/base.ts:41](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L41)
 
 Validate transaction with protocol meta and authority list
 
@@ -290,7 +290,7 @@ True if transaction is valid
 
 > `abstract` **validateSignedMessage**(`message`, `signedMessage`, `pubkey`): `boolean`
 
-Defined in: [adapters/base.ts:138](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L138)
+Defined in: [adapters/base.ts:138](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L138)
 
 #### Parameters
 
@@ -316,7 +316,7 @@ Defined in: [adapters/base.ts:138](https://github.com/otaprotocol/actioncodes/bl
 
 > `abstract` `protected` **validateTransactionIntegrity**(`tx`, `meta`): `boolean`
 
-Defined in: [adapters/base.ts:95](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L95)
+Defined in: [adapters/base.ts:95](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L95)
 
 Chain-specific transaction integrity validation
 Override this method for additional validation logic
@@ -347,7 +347,7 @@ True if transaction integrity is valid
 
 > `abstract` **verifyCodeSignature**(`actionCode`): `boolean`
 
-Defined in: [adapters/base.ts:115](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L115)
+Defined in: [adapters/base.ts:115](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L115)
 
 Verify the code signature
 This is specific to the chain and should be implemented by the concrete adapter
@@ -373,7 +373,7 @@ True if the code signature is valid
 
 > `abstract` **verifyFinalizedTransaction**(`tx`, `actionCode`): `boolean`
 
-Defined in: [adapters/base.ts:136](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/adapters/base.ts#L136)
+Defined in: [adapters/base.ts:136](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/adapters/base.ts#L136)
 
 Verify the finalized transaction
 

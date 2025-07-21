@@ -6,7 +6,7 @@
 
 # Interface: ProtocolMetaV1
 
-Defined in: [meta.ts:7](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L7)
+Defined in: [meta.ts:7](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L7)
 
 Protocol meta structure for code verification
 
@@ -16,7 +16,7 @@ Protocol meta structure for code verification
 
 > **id**: `string`
 
-Defined in: [meta.ts:11](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L11)
+Defined in: [meta.ts:11](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L11)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [meta.ts:11](https://github.com/otaprotocol/actioncodes/blob/d0ef10a
 
 > **initiator**: `string`
 
-Defined in: [meta.ts:10](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L10)
+Defined in: [meta.ts:10](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L10)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [meta.ts:10](https://github.com/otaprotocol/actioncodes/blob/d0ef10a
 
 > `optional` **iss**: `string`
 
-Defined in: [meta.ts:12](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L12)
+Defined in: [meta.ts:12](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L12)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [meta.ts:12](https://github.com/otaprotocol/actioncodes/blob/d0ef10a
 
 > `optional` **params**: `string`
 
-Defined in: [meta.ts:13](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L13)
+Defined in: [meta.ts:13](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L13)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [meta.ts:13](https://github.com/otaprotocol/actioncodes/blob/d0ef10a
 
 > **prefix**: `string`
 
-Defined in: [meta.ts:9](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L9)
+Defined in: [meta.ts:9](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L9)
 
 ***
 
@@ -56,4 +56,4 @@ Defined in: [meta.ts:9](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae
 
 > **version**: `string`
 
-Defined in: [meta.ts:8](https://github.com/otaprotocol/actioncodes/blob/d0ef10ae3bd279eafa4f9f7708c521c6ab240398/src/meta.ts#L8)
+Defined in: [meta.ts:8](https://github.com/otaprotocol/actioncodes/blob/7fa582d3aecdeca51131d2fc9eec0802298f9a4d/src/meta.ts#L8)

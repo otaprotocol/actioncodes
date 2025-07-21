@@ -68,6 +68,10 @@ export class ActionCode {
         return isSignatureValid && isCodeValid;
     }
 
+    updateStatus(status: ActionCodeStatus): void {
+        this.fields.status = status;
+    }
+
     get json(): ActionCodeFields {
         return this.fields;
     }
